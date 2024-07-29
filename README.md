@@ -9,10 +9,23 @@
 * batch image generate with LLM
 * prompt detail is important
 * detail using LLM
-* idea form https://github.com/pmcculler/sd-dynamic-javascript
-* Currently you can't embed Javascript in your SD prompts, which is just silly.
-* That's sufficent, I think. I can't wait to see what amazing things people come up with. Please share them with me, and others, if you pease.
-
+* calling LLM by 2 method
+  * python lib (just fill LLM-prompt)
+    * when generate forever mode
+      * example as follows figure Red-box. 
+      * just tell LLM who, when or what
+      * LLM will take care details.
+    * when a story-board mode (You can generate serial image follow a story by LLM context.)
+      * example: 2~10 images(like comic book)
+      * a superstar on stage
+      * she is singing
+      * people give her flower
+      * ...etc.
+  * javascript fetch POST method(in sd-prompt)
+    * js core function form https://github.com/pmcculler/sd-dynamic-javascript
+    * Currently, you can't embed Javascript in your SD prompts, which is just silly.
+    * Ori author say: That's sufficient, I think. I can't wait to see what amazing things people come up with. Please share them with me, and others, if you pease.
+      * interactive with story mode
 
 
 ---
@@ -47,7 +60,7 @@
 
 ## Installtion
 
-### Suggestion Model
+### Suggestion LLM Model
 
 * 4B VRAM<2G
   * CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF/qwen1.5-4b-chat-q2_k.gguf
@@ -58,8 +71,8 @@
 
 ### Suggestion software
 
-
-* https://lmstudio.ai/
+* https://lmstudio.ai/ (windows)
+* https://ollama.com/ (mac, linux)
 * https://github.com/openai/openai-python
 
 <img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=40%>
