@@ -2,6 +2,7 @@ import sys
 import subprocess
 import logging
 
+
 def install_requirements(force=False) -> None:
     """
     Invoke pip to install the requirements for the extension.
@@ -18,7 +19,7 @@ def install_requirements(force=False) -> None:
         pass
 
     requirements_to_install = [
-         "OpenAI"
+        "OpenAI"
     ]
 
     if not requirements_to_install:
@@ -34,6 +35,6 @@ def install_requirements(force=False) -> None:
     print(f"sd-webui-decadetw-auto-prompt-llm installer: running {' '.join(command)}")
     subprocess.check_call(command)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     install_requirements(force=("-f" in sys.argv))

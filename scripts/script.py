@@ -109,14 +109,18 @@ class JSPromptScript(scripts.Script):
                                             placeholder="http://localhost:1234/v1")
                     llm_apikey = gr.Textbox(label="0. [LLM-API-Key]", lines=1,
                                             placeholder="lm-studio")
-        return [llm_is_enabled, llm_apiurl,
-                llm_system_prompt, llm_ur_prompt, llm_max_token,
-                llm_llm_answer, llm_history, llm_apiurl, llm_apikey]
+        return [llm_is_enabled,
+                llm_system_prompt, llm_ur_prompt,llm_llm_answer,
+                llm_history,
+                llm_max_token,
+                llm_apiurl, llm_apikey]
 
-    def process(self, p: StableDiffusionProcessingTxt2Img, js_is_enabled, llm_is_enabled, llm_apiurl, llm_apikey,
-                js_prompt_js, js_result,
-                llm_system_prompt, llm_ur_prompt, llm_max_token,
-                llm_llm_answer, llm_history):
+    def process(self, p: StableDiffusionProcessingTxt2Img,
+                llm_is_enabled,
+                llm_system_prompt, llm_ur_prompt, llm_llm_answer,
+                llm_history,
+                llm_max_token,
+                llm_apiurl, llm_apikey):
 
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt, llm_max_token)
