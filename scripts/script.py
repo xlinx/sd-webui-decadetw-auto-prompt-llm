@@ -25,11 +25,12 @@ class JSPromptScript(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
-    def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token, llm_recursive_use,
+    def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token, llm_tempture, llm_recursive_use,
                            llm_keep_your_prompt_use):
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
-            _llm_ur_prompt = (_llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + self.llm_history_array[self.llm_history_array.__len__() - 1][0]
+            _llm_ur_prompt = (_llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
+                             self.llm_history_array[self.llm_history_array.__len__() - 1][0]
         completion = self.client.chat.completions.create(
             model="",
             messages=[
@@ -37,7 +38,7 @@ class JSPromptScript(scripts.Script):
                 {"role": "user", "content": _llm_ur_prompt}
             ],
             max_tokens=_llm_max_token,
-            temperature=0.7,
+            temperature=llm_tempture,
 
         )
         print("[sd-webui-decadetw-auto-prompt-llm][Init-UI][completion]: " + str(completion) + "\n\n")
@@ -100,8 +101,11 @@ class JSPromptScript(scripts.Script):
                         row_count=3,
                         col_count=(3, "fixed"),
                     )
-
-                    llm_max_token = gr.Slider(5, 500, value=50, step=5, label="Max LLM-answer length")
+                    with gr.Row():
+                        llm_max_token = gr.Slider(5, 500, scale=2, value=50, step=5,
+                                                  label="LLM Max length(tokens)")
+                        llm_tempture = gr.Slider(-2, 2, scale=3, value=0.9, step=0.01,
+                                                 label="LLM temperature (Deterministic) <1 | >1 (More creative)")
                     llm_button = gr.Button("Call LLM above")
                     llm_button.click(self.call_llm_pythonlib, inputs=[llm_system_prompt, llm_ur_prompt, llm_max_token],
                                      outputs=[llm_llm_answer, llm_history])
@@ -114,18 +118,19 @@ class JSPromptScript(scripts.Script):
         return [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                 llm_system_prompt, llm_ur_prompt, llm_llm_answer,
                 llm_history,
-                llm_max_token,
+                llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey]
 
     def process(self, p: StableDiffusionProcessingTxt2Img,
                 llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                 llm_system_prompt, llm_ur_prompt, llm_llm_answer,
                 llm_history,
-                llm_max_token,
+                llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey):
 
         if llm_is_enabled:
-            r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt, llm_max_token, llm_recursive_use,
+            r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt, llm_max_token, llm_tempture,
+                                        llm_recursive_use,
                                         llm_keep_your_prompt_use)
             g_result = str(r[0])
             print("[][][]llm_llm_answer ", llm_llm_answer)
