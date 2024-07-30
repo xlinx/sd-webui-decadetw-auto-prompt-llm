@@ -18,7 +18,7 @@ def install_requirements(force=False) -> None:
         pass
 
     requirements_to_install = [
-        "selenium", "OpenAI"
+         "OpenAI"
     ]
 
     if not requirements_to_install:

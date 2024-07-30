@@ -21,11 +21,13 @@
       * she is singing
       * people give her flower
       * ...etc.
-  * javascript fetch POST method(in sd-prompt)
-    * js core function form https://github.com/pmcculler/sd-dynamic-javascript
-    * Currently, you can't embed Javascript in your SD prompts, which is just silly.
-    * Ori author say: That's sufficient, I think. I can't wait to see what amazing things people come up with. Please share them with me, and others, if you pease.
-      * interactive with story mode
+  * javascript fetch POST method (in sd-prompt)
+    * security issue, but u can consider as follows 
+    * https://github.com/pmcculler/sd-dynamic-javascript
+    * https://github.com/ThereforeGames/unprompted
+    * https://github.com/adieyal/sd-dynamic-prompts
+    * https://en.wikipedia.org/wiki/Server-side_request_forgery
+    * and Command Line Arg --allow-code
 
 
 ---
@@ -83,35 +85,15 @@
 
 You can write Javascript now to your heart's content! Examples of how this works after a short preamble, or you can scroll straight to them below.
 
-
-
 ### Using JS fetch method calling LLM
 
-```javascript
-%%
- result = await fetch('http://localhost:1234/v1/chat/completions', {
-            method: 'POST',
-            body: JSON.stringify({
-                "messages": [{
-                    "role": "system",
-                    "content": "You are an AI prompt word playwright. Use the provided keywords to create a beautiful composition. You only need the prompt words, not your feelings. Customize the style, pose, lighting, scene, decoration, etc., and be as detailed as possible. "
-                }, {"role": "user", "content": "A superstar on sex."}],
-                "temperature": 0.7,
-                "max_tokens": 80,
-                "stream": false
-            }),
-            headers: {'Content-Type': 'application/json'}
-        }).then(res => {
-            return res.json();
-        }).then(result => {
-            return result['choices'][0]['message']['content'];
-        });
+security issue, but u can consider as follows
 
-        return result;
-%%
-```
-
-
+  * https://github.com/pmcculler/sd-dynamic-javascript
+  * https://github.com/ThereforeGames/unprompted
+  * https://github.com/adieyal/sd-dynamic-prompts
+  * https://en.wikipedia.org/wiki/Server-side_request_forgery
+  * and Command Line Arg --allow-code
 
 ## Colophon
 
