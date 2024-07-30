@@ -2,7 +2,7 @@
 * Automatic1111 extension 
 * Calling LLM; auto prompt for batch generate images 
 * embedding LLM into prompts.
-* embedding Javascript into prompts.
+* You will notice the image will have content.
 
 ## Motivation
 

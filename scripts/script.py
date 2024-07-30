@@ -1,6 +1,5 @@
 import logging
 import re
-from asyncio.windows_events import NULL
 import gradio as gr
 from openai import OpenAI
 from modules import scripts
@@ -17,10 +16,7 @@ class JSPromptScript(scripts.Script):
     llm_history_array = []
 
     def __init__(self) -> None:
-        self.jr = NULL
         self.YOU_LLM = "A superstar on stage."
-        # self.LLM_YOU = "AI"
-        # self.LLM_YOU = gr.State()
         super().__init__()
 
     def title(self):
@@ -29,7 +25,11 @@ class JSPromptScript(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
-    def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token):
+    def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token, llm_recursive_use,
+                           llm_keep_your_prompt_use):
+
+        if llm_recursive_use and (self.llm_history_array.__len__() > 1):
+            _llm_ur_prompt = (_llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + self.llm_history_array[self.llm_history_array.__len__() - 1][0]
         completion = self.client.chat.completions.create(
             model="",
             messages=[
@@ -40,7 +40,7 @@ class JSPromptScript(scripts.Script):
             temperature=0.7,
 
         )
-        print("\n\n[][Init-UI][completion]: " + str(completion) + "\n\n")
+        print("[sd-webui-decadetw-auto-prompt-llm][Init-UI][completion]: " + str(completion) + "\n\n")
         self.llm_history_array.append([completion.choices[0].message.content, _llm_ur_prompt, _llm_system_prompt])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
@@ -61,6 +61,8 @@ class JSPromptScript(scripts.Script):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
                     llm_is_enabled = gr.Checkbox(label="Enable LLM-Answer to SD-prompt", value=True)
+                    llm_recursive_use = gr.Checkbox(label="Recursive-prompt. Use the prompt from last one", value=True)
+                    llm_keep_your_prompt_use = gr.Checkbox(label="Keep Your prompt ahead each request", value=True)
 
                     with gr.Row():
                         with gr.Column():
@@ -109,21 +111,22 @@ class JSPromptScript(scripts.Script):
                                             placeholder="http://localhost:1234/v1")
                     llm_apikey = gr.Textbox(label="0. [LLM-API-Key]", lines=1,
                                             placeholder="lm-studio")
-        return [llm_is_enabled,
-                llm_system_prompt, llm_ur_prompt,llm_llm_answer,
+        return [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                llm_system_prompt, llm_ur_prompt, llm_llm_answer,
                 llm_history,
                 llm_max_token,
                 llm_apiurl, llm_apikey]
 
     def process(self, p: StableDiffusionProcessingTxt2Img,
-                llm_is_enabled,
+                llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                 llm_system_prompt, llm_ur_prompt, llm_llm_answer,
                 llm_history,
                 llm_max_token,
                 llm_apiurl, llm_apikey):
 
         if llm_is_enabled:
-            r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt, llm_max_token)
+            r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt, llm_max_token, llm_recursive_use,
+                                        llm_keep_your_prompt_use)
             g_result = str(r[0])
             print("[][][]llm_llm_answer ", llm_llm_answer)
 
@@ -131,7 +134,6 @@ class JSPromptScript(scripts.Script):
                 p.all_prompts[i] = p.all_prompts[i] + ("," if (p.all_prompts[0].__len__() > 0) else "") + g_result
 
         return p.all_prompts[0]
-
 
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")
