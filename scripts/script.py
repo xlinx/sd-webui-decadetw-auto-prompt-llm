@@ -1,24 +1,55 @@
-import logging
 import os
-import re
+
+import modules
+import modules.ui
 import gradio as gr
 from openai import OpenAI
-from modules import scripts
+from modules import scripts, script_callbacks, ui
 from modules.processing import StableDiffusionProcessingTxt2Img
+from modules.infotext_utils import image_from_url_text, PasteField
+
 import base64
 
+# from modules.script_callbacks import on_ui_tabs
 from modules.shared import opts
+
+# Logging
+log_file = os.path.join(scripts.basedir(), "auto-llm.log")
+
+logger = None
+logger_mode = None
+
+random_symbol = '\U0001f3b2\ufe0f'  # 🎲️
+reuse_symbol = '\u267b\ufe0f'  # ♻️
+paste_symbol = '\u2199\ufe0f'  # ↙
+refresh_symbol = '\U0001f504'  # 🔄
+save_style_symbol = '\U0001f4be'  # 💾
+apply_style_symbol = '\U0001f4cb'  # 📋
+clear_prompt_symbol = '\U0001f5d1\ufe0f'  # 🗑️
+extra_networks_symbol = '\U0001F3B4'  # 🎴
+switch_values_symbol = '\U000021C5'  # ⇅
+restore_progress_symbol = '\U0001F300'  # 🌀
+detect_image_size_symbol = '\U0001F4D0'  # 📐
 
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
 
 
-class JSPromptScript(scripts.Script):
-    LLM_YOU = gr.State("a1")
+def add_to_prompt_txt2img(self, prompt):
+    modules.ui.apply_setting("prompt", prompt)
+    return prompt
+
+
+def add_to_prompt_img2img(self, prompt):
+    modules.ui.PasteField.__setattr__(self, "prompt", prompt)
+    return prompt
+
+
+class AutoLLM(scripts.Script):
     client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
-
+    llm_history_array_eye = []
     def __init__(self) -> None:
         self.YOU_LLM = "A superstar on stage."
         super().__init__()
@@ -30,6 +61,7 @@ class JSPromptScript(scripts.Script):
         return scripts.AlwaysVisible
 
     def call_llm_eye_open(self, llm_system_prompt_eye, llm_ur_prompt_eye, llm_max_token_eye, llm_tempture_eye):
+
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -40,26 +72,28 @@ class JSPromptScript(scripts.Script):
         }
 
         try:
-            image = open(llm_ur_prompt_eye).read()
+            print("[][call_llm_eye_open][]", llm_ur_prompt_eye)
+
+            image = open(llm_ur_prompt_eye, "rb").read()
             base64_image = base64.b64encode(image).decode("utf-8")
+            # print("[][call_llm_eye_open][]base64_image", base64_image)
+
         except:
             print("Couldn't read the image. Make sure the path is correct and the file exists.")
-
+        # https: // platform.openai.com / docs / guides / vision?lang = curl
         completion = self.client.chat.completions.create(
             model="",
             messages=[
-                {
-                    "role": "system",
-                    "content": {llm_system_prompt_eye},
-                },
+
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "What’s in this image?"},
+                        {"type": "text", "text": f"{llm_system_prompt_eye}"},
                         {
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{base64_image}"
+                                # "url": f"{llm_ur_prompt_eye}"
                             },
                         },
                     ],
@@ -69,13 +103,21 @@ class JSPromptScript(scripts.Script):
             stream=False
         )
 
-        for chunk in completion:
-            if chunk.choices[0].delta.content:
-                return chunk.choices[0].delta.content
-                # print(chunk.choices[0].delta.content, end="", flush=True)
+        # for chunk in completion:
+        #     if chunk.choices[0].delta.content:
+        #         result = chunk.choices[0].delta.content
+        # print(chunk.choices[0].delta.content, end="", flush=True)
+        result = completion.choices[0].message.content
+        self.llm_history_array.append([result, "", llm_system_prompt_eye])
+        if len(self.llm_history_array) > 3:
+            self.llm_history_array.remove(self.llm_history_array[0])
+        print("[][auto-llm][as-assistant] ", result)
+
+        return result, self.llm_history_array
 
     def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token, llm_tempture, llm_recursive_use,
                            llm_keep_your_prompt_use):
+        # print("[][auto-llm][as-assistant] modules.ui.processing.paths", modules.ui.ui_common..infotext)
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             _llm_ur_prompt = (_llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
@@ -90,11 +132,13 @@ class JSPromptScript(scripts.Script):
             temperature=llm_tempture,
 
         )
-        print("[sd-webui-decadetw-auto-prompt-llm][Init-UI][completion]: " + str(completion) + "\n\n")
-        self.llm_history_array.append([completion.choices[0].message.content, _llm_ur_prompt, _llm_system_prompt])
+        result = completion.choices[0].message.content
+        self.llm_history_array.append([result, _llm_ur_prompt, _llm_system_prompt])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
-        return completion.choices[0].message.content, self.llm_history_array
+        print("[][auto-llm][as-assistant] ", result)
+
+        return result, self.llm_history_array
 
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
@@ -111,8 +155,8 @@ class JSPromptScript(scripts.Script):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
                     llm_is_enabled = gr.Checkbox(label="Enable LLM-Answer to SD-prompt", value=True)
-                    llm_recursive_use = gr.Checkbox(label="Recursive-prompt. Use the prompt from last one", value=True)
-                    llm_keep_your_prompt_use = gr.Checkbox(label="Keep Your prompt ahead each request", value=True)
+                    llm_recursive_use = gr.Checkbox(label="Recursive-prompt. Use the prompt from last one🌀", value=True)
+                    llm_keep_your_prompt_use = gr.Checkbox(label="Keep LLM-Your-Prompt ahead each request", value=True)
 
                     with gr.Row():
                         with gr.Column(scale=2):
@@ -137,14 +181,31 @@ class JSPromptScript(scripts.Script):
                                                                        "without endings."
                                                            )
                         with gr.Column(scale=3):
-                            llm_ur_prompt = gr.Textbox(label="2. [Your-Prompt]", lines=2, value="A superstar on stage.",
+                            llm_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=2,
+                                                       value="A superstar on stage.",
                                                        placeholder="A superstar on stage.")
                             llm_tempture = gr.Slider(-2, 2, value=0.9, step=0.01,
-                                                     label="LLM temperature (Deterministic) <1 | >1 (More creative)")
+                                                     label="LLM temperature", elem_id="llm_tempture",
+                                                     interactive=True,
+                                                     hint='temperature (Deterministic) <1 | >1 (More creative)')
+                            llm_top_k = gr.Slider(
+                                elem_id="top_k_slider", label="LLM Top K", value=8, minimum=1, maximum=20, step=1,
+                                interactive=True,
+                                hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                             llm_llm_answer = gr.Textbox(inputs=self.process, show_copy_button=True, interactive=True,
                                                         label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
+                            with gr.Row():
+                                llm_sendto_txt2img = gr.Button("send to txt2img")
+                                llm_sendto_txt2img.click(add_to_prompt_txt2img, inputs=[llm_llm_answer],
+                                                         outputs=[]).then(None, _js='switch_to_txt2img', inputs=None,
+                                                                          outputs=None)
+                                llm_sendto_img2img = gr.Button("send to img2img")
+                                llm_sendto_img2img.click(add_to_prompt_img2img, inputs=[llm_llm_answer],
+                                                         outputs=[]).then(None, _js='switch_to_img2img', inputs=None,
+                                                                          outputs=None)
                             llm_max_token = gr.Slider(5, 500, value=50, step=5,
                                                       label="LLM Max length(tokens)")
+
                     llm_history = gr.Dataframe(
                         interactive=True,
                         label="History/StoryBoard",
@@ -159,10 +220,11 @@ class JSPromptScript(scripts.Script):
                                                                       llm_max_token, llm_tempture,
                                                                       llm_recursive_use, llm_keep_your_prompt_use],
                                      outputs=[llm_llm_answer, llm_history])
-                with gr.Tab("LLM-openEye-vision"):
-                    llm_is_open_eye = gr.Checkbox(label="Enable LLM-Eye", value=False)
-                    llm_is_open_eye_last_one_image = gr.Checkbox(label="Auto look at last one image (skip Your-Image)",
-                                                                 value=True)
+                with gr.Tab("LLM-vision"):
+                    llm_is_open_eye = gr.Checkbox(label="Enable LLM-vision👀", value=False)
+                    llm_is_open_eye_last_one_image = gr.Checkbox(
+                        label="Auto look at last one image (auto put last image into Step.2)",
+                        value=True)
                     with gr.Row():
                         with gr.Column(scale=2):
                             llm_system_prompt_eye = gr.Textbox(label="1. [LLM-System-Prompt-eye]", lines=25,
@@ -171,7 +233,7 @@ class JSPromptScript(scripts.Script):
                                                                placeholder="This is a chat between a user and an "
                                                                            "assistant. The assistant is helping the user to describe an image.")
                         with gr.Column(scale=3):
-                            llm_ur_prompt_eye = gr.Image(label="2. [Your-Image]", lines=1)
+                            llm_ur_prompt_eye = gr.Image(label="2. [Your-Image]", lines=1, type="filepath")
                             llm_tempture_eye = gr.Slider(-2, 2, value=0.9, step=0.01,
                                                          label="LLM temperature (Deterministic) <1 | >1 (More creative)")
                             llm_llm_answer_eye = gr.Textbox(inputs=self.process, show_copy_button=True,
@@ -188,7 +250,7 @@ class JSPromptScript(scripts.Script):
                         row_count=3,
                         col_count=(3, "fixed"),
                     )
-                    llm_button_eye = gr.Button("Call LLM-eye-vision above")
+                    llm_button_eye = gr.Button("Call LLM-vision above")
                     llm_button_eye.click(self.call_llm_eye_open,
                                          inputs=[llm_system_prompt_eye, llm_ur_prompt_eye,
                                                  llm_max_token_eye, llm_tempture_eye],
@@ -198,6 +260,10 @@ class JSPromptScript(scripts.Script):
                 #
                 # with gr.Tab("LLM-asking-chat"):
                 #     llm_is_asking = gr.Checkbox(label="Enable asking", value=False)
+                with gr.Tab("Gallery"):
+                    gallery = gr.Gallery(
+                        label="Generated images", show_label=False, elem_id="gallery"
+                        , columns=[3], rows=[1], object_fit="contain", height="auto")
 
                 with gr.Tab("Setup"):
                     llm_apiurl = gr.Textbox(label="0. [LLM-URL]", lines=1,
@@ -212,7 +278,10 @@ class JSPromptScript(scripts.Script):
                 llm_is_open_eye, llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye,
                 llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
-                llm_history_eye]
+                llm_history_eye,
+                llm_sendto_txt2img, llm_sendto_img2img]
+
+    # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
 
     def process(self, p: StableDiffusionProcessingTxt2Img,
                 llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
@@ -223,7 +292,8 @@ class JSPromptScript(scripts.Script):
                 llm_is_open_eye, llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye,
                 llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
-                llm_history_eye):
+                llm_history_eye,
+                llm_sendto_txt2img, llm_sendto_img2img):
 
         if llm_is_open_eye:
             r = self.call_llm_eye_open(llm_system_prompt_eye, llm_ur_prompt_eye, llm_max_token_eye, llm_tempture_eye)
@@ -234,8 +304,6 @@ class JSPromptScript(scripts.Script):
                                         llm_max_token, llm_tempture,
                                         llm_recursive_use, llm_keep_your_prompt_use)
             g_result = str(r[0])
-            print("[][][]llm_llm_answer ", llm_llm_answer)
-
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + ("," if (p.all_prompts[0].__len__() > 0) else "") + g_result
 
@@ -252,3 +320,5 @@ class JSPromptScript(scripts.Script):
 #               "Models",
 #         info="get models from local LLM. (:LM Studio)"
 #     )
+
+# script_callbacks.on_ui_tabs(on_ui_tabs)

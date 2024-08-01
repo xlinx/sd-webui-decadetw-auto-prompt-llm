@@ -9,7 +9,7 @@
 * batch image generate with LLM
 * prompt detail is important
 * detail using LLM
-* calling LLM by 2 method
+* calling LLM by 
   * python lib (just fill LLM-prompt)
     * when generate forever mode
       * example as follows figure Red-box. 
@@ -21,7 +21,11 @@
       * she is singing
       * people give her flower
       * ...etc.
-  * javascript fetch POST method (in sd-prompt)
+  * Enable LLM vision (open LLM eye to see then SD-prompt)👀
+    * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
+      * llava-phi-3-mini-mmproj-f16.gguf (600MB)
+      * llava-phi-3-mini-f16.gguf (7G)
+  * javascript fetch POST method (install Yourself )
     * security issue, but u can consider as follows 
     * https://github.com/pmcculler/sd-dynamic-javascript
     * https://github.com/ThereforeGames/unprompted
@@ -55,8 +59,12 @@
     <td colspan="2">etc,.</td>
  </tr>
 </table>
-
-![readme0.png](images/readme0.png)
+<table style="border-width:0px" >
+ <tr>
+    <td><img src="images/readme0.png"></img></td>
+    <td><img src="images/readme3.png"></img></td>
+ </tr>
+</table>
 
 ![readme1.png](images/readme1.png)
 
@@ -64,13 +72,17 @@
 
 ### Suggestion LLM Model
 
-* 4B VRAM<2G
-  * CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF/qwen1.5-4b-chat-q2_k.gguf
-    * https://huggingface.co/CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF
-* 7B VRAM<8G
-  * ccpl17/Llama-3-Taiwan-8B-Instruct-GGUF/Llama-3-Taiwan-8B-Instruct.Q2_K.gguf
-  * Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix/L3-8B-Stheno-v3.2-IQ3_XXS-imat.gguf
-
+* LLM (normal, chat, assistant)
+  * 4B VRAM<2G
+    * CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF/qwen1.5-4b-chat-q2_k.gguf
+      * https://huggingface.co/CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF
+  * 7B VRAM<8G
+    * ccpl17/Llama-3-Taiwan-8B-Instruct-GGUF/Llama-3-Taiwan-8B-Instruct.Q2_K.gguf
+    * Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix/L3-8B-Stheno-v3.2-IQ3_XXS-imat.gguf
+* Enable LLM vision 👀
+    * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
+      * llava-phi-3-mini-mmproj-f16.gguf (600MB)
+      * llava-phi-3-mini-f16.gguf (7G)
 ### Suggestion software
 
 * https://lmstudio.ai/ (windows)
