@@ -61,12 +61,17 @@
 </table>
 <table style="border-width:0px" >
  <tr>
+    <td><b style="font-size:30px">LLM as text-assist&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></td>
+    <td><b style="font-size:30px">LLM as vision-assistant</b></td>
+ </tr>
+ <tr>
     <td><img src="images/readme0.png"></img></td>
     <td><img src="images/readme3.png"></img></td>
  </tr>
+ <tr>
+    <td colspan="2"><img src="images/readme1.png"></img></td>
+ </tr>
 </table>
-
-![readme1.png](images/readme1.png)
 
 ## Installtion
 
