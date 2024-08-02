@@ -1,14 +1,15 @@
+import base64
+import io
 import os
+import sys
+
+import gradio as gr
+from openai import OpenAI
 
 import modules
 import modules.ui
-import gradio as gr
-from openai import OpenAI
-from modules import scripts, script_callbacks, ui
+from modules import scripts
 from modules.processing import StableDiffusionProcessingTxt2Img
-from modules.infotext_utils import image_from_url_text, PasteField
-
-import base64
 
 # from modules.script_callbacks import on_ui_tabs
 from modules.shared import opts
@@ -30,6 +31,10 @@ extra_networks_symbol = '\U0001F3B4'  # 🎴
 switch_values_symbol = '\U000021C5'  # ⇅
 restore_progress_symbol = '\U0001F300'  # 🌀
 detect_image_size_symbol = '\U0001F4D0'  # 📐
+
+
+# sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
+# sys.stderr = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
@@ -61,7 +66,8 @@ class AutoLLM(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
-    def call_llm_eye_open(self, llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye, llm_max_token_eye):
+    def call_llm_eye_open(self, llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye,
+                          llm_max_token_eye):
 
         base64_image = ""
         path_maps = {
@@ -113,12 +119,12 @@ class AutoLLM(scripts.Script):
         self.llm_history_array.append([result, llm_system_prompt_eye, llm_ur_prompt_eye])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
-        print("[][auto-llm][as-assistant] ", result)
+        print("[][auto-llm][call_llm_eye_open] ", result)
 
         return result, self.llm_history_array
 
     def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token, llm_tempture, llm_recursive_use,
-                           llm_keep_your_prompt_use):
+                           llm_keep_your_prompt_use, llm_api_translate_system_prompt, llm_api_translate_enabled):
         # print("[][auto-llm][as-assistant] modules.ui.processing.paths", modules.ui.ui_common..infotext)
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
@@ -135,13 +141,33 @@ class AutoLLM(scripts.Script):
 
         )
         result = completion.choices[0].message.content
-        result = result.replace('\n', ' ')
-        self.llm_history_array.append([result, _llm_ur_prompt, _llm_system_prompt])
+        result = result.replace('\n', ' ').encode("utf-8").decode("cp950", "ignore")
+        result_translate = ""
+        if llm_api_translate_enabled:
+            result_translate = self.call_llm_translate(llm_api_translate_system_prompt, result, _llm_max_token)
+
+        self.llm_history_array.append([result, _llm_ur_prompt, _llm_system_prompt, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
-        print("[][auto-llm][as-assistant] ", result)
+        print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
 
         return result, self.llm_history_array
+
+    def call_llm_translate(self, llm_api_translate_system_prompt, llm_api_translate_user_prompt, _llm_max_token):
+        completion2 = self.client.chat.completions.create(
+            model="",
+            messages=[
+                {"role": "system", "content": llm_api_translate_system_prompt},
+                {"role": "user", "content": llm_api_translate_user_prompt}
+            ],
+            max_tokens=_llm_max_token,
+            temperature=0.2,
+        )
+        result_translate = completion2.choices[0].message.content
+        result_translate = result_translate.replace('\n', '')
+        print("[][auto-llm][call_llm_translate] ", result_translate)
+
+        return result_translate
 
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
@@ -157,9 +183,9 @@ class AutoLLM(scripts.Script):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
-                    llm_is_enabled = gr.Checkbox(label="Enable LLM-Answer to SD-prompt", value=True)
-                    llm_recursive_use = gr.Checkbox(label="Recursive-prompt. Use the prompt from last one🌀", value=True)
-                    llm_keep_your_prompt_use = gr.Checkbox(label="Keep LLM-Your-Prompt ahead each request", value=True)
+                    llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=True)
+                    llm_recursive_use = gr.Checkbox(label=" Recursive-prompt. Use the prompt from last one🌀", value=False)
+                    llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request", value=False)
 
                     with gr.Row():
                         with gr.Column(scale=2):
@@ -199,30 +225,22 @@ class AutoLLM(scripts.Script):
                                                         label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
                             with gr.Row():
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
-                                llm_sendto_txt2img.click(add_to_prompt_txt2img, inputs=[llm_llm_answer],
-                                                         outputs=[]).then(None, _js='switch_to_txt2img', inputs=None,
-                                                                          outputs=None)
+
                                 llm_sendto_img2img = gr.Button("send to img2img")
-                                llm_sendto_img2img.click(add_to_prompt_img2img, inputs=[llm_llm_answer],
-                                                         outputs=[]).then(None, _js='switch_to_img2img', inputs=None,
-                                                                          outputs=None)
-                            llm_max_token = gr.Slider(5, 500, value=50, step=5,
-                                                      label="LLM Max length(tokens)")
+
+                            llm_max_token = gr.Slider(5, 500, value=50, step=5, label="LLM Max length(tokens)")
 
                     llm_history = gr.Dataframe(
                         interactive=True,
                         label="History/StoryBoard",
-                        headers=["llm_answer", "system_prompt", "ur_prompt"],
-                        datatype=["str", "str", "str"],
+                        headers=["llm_answer", "system_prompt", "ur_prompt", "result_translate"],
+                        datatype=["str", "str", "str", "str"],
                         row_count=3,
-                        col_count=(3, "fixed"),
+                        col_count=(4, "fixed"),
                     )
 
                     llm_button = gr.Button("Call LLM above")
-                    llm_button.click(self.call_llm_pythonlib, inputs=[llm_system_prompt, llm_ur_prompt,
-                                                                      llm_max_token, llm_tempture,
-                                                                      llm_recursive_use, llm_keep_your_prompt_use],
-                                     outputs=[llm_llm_answer, llm_history])
+
                 with gr.Tab("LLM-vision"):
                     llm_is_open_eye = gr.Checkbox(label="Enable LLM-vision👀", value=False)
                     llm_is_open_eye_last_one_image = gr.Checkbox(
@@ -255,9 +273,7 @@ class AutoLLM(scripts.Script):
                         col_count=(3, "fixed"),
                     )
                     llm_button_eye = gr.Button("Call LLM-vision above")
-                    llm_button_eye.click(self.call_llm_eye_open,
-                                         inputs=[llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye, llm_max_token_eye],
-                                         outputs=[llm_llm_answer_eye, llm_history_eye])
+
                 # with gr.Tab("LLM-through-embeddings"):
                 #     llm_is_through = gr.Checkbox(label="Enable LLM-through", value=False)
                 #
@@ -269,15 +285,33 @@ class AutoLLM(scripts.Script):
                         , columns=[3], rows=[1], object_fit="contain", height="auto")
 
                 with gr.Tab("Setup"):
-                    llm_apiurl = gr.Textbox(label="0. [LLM-URL]", lines=1,
-                                            placeholder="http://localhost:1234/v1")
-                    llm_apikey = gr.Textbox(label="0. [LLM-API-Key]", lines=1,
-                                            placeholder="lm-studio")
+                    llm_apiurl = gr.Textbox(label="0.[LLM-URL]", lines=1,
+                                            value="http://localhost:1234/v1")
+                    llm_apikey = gr.Textbox(label="0.[LLM-API-Key]", lines=1,
+                                            value="lm-studio")
+                    llm_api_translate_enabled = gr.Checkbox(label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference.)", value=True)
+                    llm_api_translate_system_prompt = gr.Textbox(label="0.[LLM-Translate-System-Prompt]", lines=2,
+                                                                 value="You are a translator, translate input to chinese, always response in Chinese, not English.")
+        llm_button_eye.click(self.call_llm_eye_open,
+                             inputs=[llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                                     llm_tempture_eye, llm_max_token_eye],
+                             outputs=[llm_llm_answer_eye, llm_history_eye])
+        llm_button.click(self.call_llm_pythonlib, inputs=[llm_system_prompt, llm_ur_prompt,
+                                                          llm_max_token, llm_tempture,
+                                                          llm_recursive_use, llm_keep_your_prompt_use,
+                                                          llm_api_translate_system_prompt],
+                         outputs=[llm_llm_answer, llm_history])
+        llm_sendto_txt2img.click(add_to_prompt_txt2img, inputs=[llm_llm_answer],
+                                 outputs=[]).then(None, _js='switch_to_txt2img', inputs=None,
+                                                  outputs=None)
+        llm_sendto_img2img.click(add_to_prompt_img2img, inputs=[llm_llm_answer],
+                                 outputs=[]).then(None, _js='switch_to_img2img', inputs=None,
+                                                  outputs=None)
         return [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                 llm_system_prompt, llm_ur_prompt, llm_llm_answer,
                 llm_history,
                 llm_max_token, llm_tempture,
-                llm_apiurl, llm_apikey,
+                llm_apiurl, llm_apikey, llm_api_translate_system_prompt, llm_api_translate_enabled,
                 llm_is_open_eye, llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
                 llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
@@ -291,7 +325,7 @@ class AutoLLM(scripts.Script):
                 llm_system_prompt, llm_ur_prompt, llm_llm_answer,
                 llm_history,
                 llm_max_token, llm_tempture,
-                llm_apiurl, llm_apikey,
+                llm_apiurl, llm_apikey, llm_api_translate_system_prompt, llm_api_translate_enabled,
                 llm_is_open_eye, llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
                 llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
@@ -301,13 +335,16 @@ class AutoLLM(scripts.Script):
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt,
                                         llm_max_token, llm_tempture,
-                                        llm_recursive_use, llm_keep_your_prompt_use)
+                                        llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt, llm_api_translate_enabled)
             g_result = str(r[0])
+
+            # g_result += g_result+"\n\n"+translate_r
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result
 
         if llm_is_open_eye:
-            r2 = self.call_llm_eye_open(llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye, llm_max_token_eye)
+            r2 = self.call_llm_eye_open(llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                                        llm_tempture_eye, llm_max_token_eye)
             g_result2 = str(r2[0])
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result2
