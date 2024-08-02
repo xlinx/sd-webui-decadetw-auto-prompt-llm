@@ -50,6 +50,7 @@ class AutoLLM(scripts.Script):
     client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
     llm_history_array_eye = []
+
     def __init__(self) -> None:
         self.YOU_LLM = "A superstar on stage."
         super().__init__()
@@ -60,7 +61,7 @@ class AutoLLM(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
-    def call_llm_eye_open(self, llm_system_prompt_eye, llm_ur_prompt_eye, llm_max_token_eye, llm_tempture_eye):
+    def call_llm_eye_open(self, llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye, llm_max_token_eye):
 
         base64_image = ""
         path_maps = {
@@ -72,9 +73,7 @@ class AutoLLM(scripts.Script):
         }
 
         try:
-            print("[][call_llm_eye_open][]", llm_ur_prompt_eye)
-
-            image = open(llm_ur_prompt_eye, "rb").read()
+            image = open(llm_ur_prompt_image_eye, "rb").read()
             base64_image = base64.b64encode(image).decode("utf-8")
             # print("[][call_llm_eye_open][]base64_image", base64_image)
 
@@ -84,23 +83,25 @@ class AutoLLM(scripts.Script):
         completion = self.client.chat.completions.create(
             model="",
             messages=[
-
+                {
+                    "role": "system",
+                    "content": f"{llm_system_prompt_eye}",
+                },
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": f"{llm_system_prompt_eye}"},
+                        {"type": "text", "text": f"{llm_ur_prompt_eye}"},
                         {
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{base64_image}"
-                                # "url": f"{llm_ur_prompt_eye}"
                             },
                         },
                     ],
                 }
             ],
             max_tokens=llm_max_token_eye,
-            stream=False
+            temperature=llm_tempture_eye,
         )
 
         # for chunk in completion:
@@ -108,7 +109,8 @@ class AutoLLM(scripts.Script):
         #         result = chunk.choices[0].delta.content
         # print(chunk.choices[0].delta.content, end="", flush=True)
         result = completion.choices[0].message.content
-        self.llm_history_array.append([result, "", llm_system_prompt_eye])
+        result = result.replace('\n', ' ')
+        self.llm_history_array.append([result, llm_system_prompt_eye, llm_ur_prompt_eye])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
         print("[][auto-llm][as-assistant] ", result)
@@ -133,6 +135,7 @@ class AutoLLM(scripts.Script):
 
         )
         result = completion.choices[0].message.content
+        result = result.replace('\n', ' ')
         self.llm_history_array.append([result, _llm_ur_prompt, _llm_system_prompt])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
@@ -227,13 +230,14 @@ class AutoLLM(scripts.Script):
                         value=True)
                     with gr.Row():
                         with gr.Column(scale=2):
-                            llm_system_prompt_eye = gr.Textbox(label="1. [LLM-System-Prompt-eye]", lines=25,
-                                                               value="This is a chat between a user and an assistant. The "
-                                                                     "assistant is helping the user to describe an image.",
-                                                               placeholder="This is a chat between a user and an "
-                                                                           "assistant. The assistant is helping the user to describe an image.")
+                            llm_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=10,
+                                                               value="This is a chat between a user and an assistant. The assistant is helping the user to describe an image.",
+                                                               placeholder="This is a chat between a user and an assistant. The assistant is helping the user to describe an image.")
+                            llm_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=10,
+                                                           value="What’s in this image?",
+                                                           placeholder="What’s in this image?")
                         with gr.Column(scale=3):
-                            llm_ur_prompt_eye = gr.Image(label="2. [Your-Image]", lines=1, type="filepath")
+                            llm_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type="filepath")
                             llm_tempture_eye = gr.Slider(-2, 2, value=0.9, step=0.01,
                                                          label="LLM temperature (Deterministic) <1 | >1 (More creative)")
                             llm_llm_answer_eye = gr.Textbox(inputs=self.process, show_copy_button=True,
@@ -252,8 +256,7 @@ class AutoLLM(scripts.Script):
                     )
                     llm_button_eye = gr.Button("Call LLM-vision above")
                     llm_button_eye.click(self.call_llm_eye_open,
-                                         inputs=[llm_system_prompt_eye, llm_ur_prompt_eye,
-                                                 llm_max_token_eye, llm_tempture_eye],
+                                         inputs=[llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye, llm_max_token_eye],
                                          outputs=[llm_llm_answer_eye, llm_history_eye])
                 # with gr.Tab("LLM-through-embeddings"):
                 #     llm_is_through = gr.Checkbox(label="Enable LLM-through", value=False)
@@ -276,7 +279,7 @@ class AutoLLM(scripts.Script):
                 llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey,
                 llm_is_open_eye, llm_is_open_eye_last_one_image,
-                llm_system_prompt_eye, llm_ur_prompt_eye,
+                llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
                 llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
                 llm_history_eye,
                 llm_sendto_txt2img, llm_sendto_img2img]
@@ -290,14 +293,10 @@ class AutoLLM(scripts.Script):
                 llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey,
                 llm_is_open_eye, llm_is_open_eye_last_one_image,
-                llm_system_prompt_eye, llm_ur_prompt_eye,
+                llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
                 llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
                 llm_history_eye,
                 llm_sendto_txt2img, llm_sendto_img2img):
-
-        if llm_is_open_eye:
-            r = self.call_llm_eye_open(llm_system_prompt_eye, llm_ur_prompt_eye, llm_max_token_eye, llm_tempture_eye)
-            print("[][][]llm_is_open_eye ", r)
 
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt,
@@ -305,7 +304,13 @@ class AutoLLM(scripts.Script):
                                         llm_recursive_use, llm_keep_your_prompt_use)
             g_result = str(r[0])
             for i in range(len(p.all_prompts)):
-                p.all_prompts[i] = p.all_prompts[i] + ("," if (p.all_prompts[0].__len__() > 0) else "") + g_result
+                p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result
+
+        if llm_is_open_eye:
+            r2 = self.call_llm_eye_open(llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye, llm_max_token_eye)
+            g_result2 = str(r2[0])
+            for i in range(len(p.all_prompts)):
+                p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result2
 
         return p.all_prompts[0]
 

@@ -7,10 +7,10 @@
 ## Motivation
 
 * batch image generate with LLM
+* batch image generate with VLM
 * prompt detail is important
-* detail using LLM
-* calling LLM by 
-  * python lib (just fill LLM-prompt)
+* Calling by text/vision/mix 
+  * Enable LLM [text-base] Just 1 sentence
     * when generate forever mode
       * example as follows figure Red-box. 
       * just tell LLM who, when or what
@@ -21,10 +21,20 @@
       * she is singing
       * people give her flower
       * ...etc.
-  * Enable LLM vision (open LLM eye to see then SD-prompt)👀
-    * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
-      * llava-phi-3-mini-mmproj-f16.gguf (600MB)
-      * llava-phi-3-mini-f16.gguf (7G)
+    * example: 
+      * wo/Vision
+        * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
+        * gemma-2-9b-it-IQ2_M.gguf (3.43GB)
+        * It's small and really nice for SD-prompt;
+  * Enable VLM (open LLM eye to see last-one-img then SD-prompt)👀
+      * w/Vision
+        * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
+        * llava-phi-3-mini-mmproj-f16.gguf (600MB)
+        * llava-phi-3-mini-f16.gguf (7G)
+    * when u download vision version model, u can enable LLM-vision to 
+      * make a story by image or
+      * let LLM see last one image automatically then
+      * LLM will keep brabra...
   * javascript fetch POST method (install Yourself )
     * security issue, but u can consider as follows 
     * https://github.com/pmcculler/sd-dynamic-javascript
@@ -50,7 +60,7 @@
     <td colspan="2"><b style="font-size:30px">3. LLM will answer other detail</b></td>
  </tr>
 <tr >
-    <td colspan="2">The superstar, with their hair flowing in the wind, stands on the stage. The lights dance around them, creating a magical moment that fills everyone present with awe. Their eyes shine bright, as if they are ready to take on the world.</td>
+    <td colspan="2"> The superstar, with their hair flowing in the wind, stands on the stage. The lights dance around them, creating a magical moment that fills everyone present with awe. Their eyes shine bright, as if they are ready to take on the world.</td>
  </tr>
 <tr >
     <td colspan="2">The superstar stands tall in their sparkling costume, surrounded by fans who chant and cheer their name. The lights shine down on them, making their hair shine like silver. The crowd is electric, every muscle tense, waiting for the superstar to perform</td>
@@ -61,8 +71,8 @@
 </table>
 <table style="border-width:0px" >
  <tr>
-    <td><b style="font-size:30px">LLM as text-assist&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></td>
-    <td><b style="font-size:30px">LLM as vision-assistant</b></td>
+    <td><b style="font-size:20px">LLM as text-assist (VRAM~2G-8G)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></td>
+    <td><b style="font-size:20px">LLM as vision-assistant (VRAM>8G)</b></td>
  </tr>
  <tr>
     <td><img src="images/readme0.png"></img></td>
@@ -71,9 +81,23 @@
  <tr>
     <td colspan="2"><img src="images/readme1.png"></img></td>
  </tr>
+<tr>
+    <td colspan="2"><img src="images/readme4.png"></img></td>
+ </tr>
 </table>
 
 ## Installtion
+
+### Suggestion software
+
+* https://lmstudio.ai/ (win, mac, linux)
+* https://ollama.com/ (win[beta], mac, linux)
+* https://github.com/openai/openai-python
+
+<img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=40%>
+
+
+
 
 ### Suggestion LLM Model
 
@@ -84,27 +108,24 @@
   * 7B VRAM<8G
     * ccpl17/Llama-3-Taiwan-8B-Instruct-GGUF/Llama-3-Taiwan-8B-Instruct.Q2_K.gguf
     * Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix/L3-8B-Stheno-v3.2-IQ3_XXS-imat.gguf
-* Enable LLM vision 👀
+  * Google-Gemma
+    * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
+    * bartowski/gemma-2-9b-it-GGUF/gemma-2-9b-it-IQ2_M.gguf
+      * small and good for SD-Prompt 
+    
+* Enable LLM vision 👀 (VRAM >=16G is better)
     * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
-      * llava-phi-3-mini-mmproj-f16.gguf (600MB)
-      * llava-phi-3-mini-f16.gguf (7G)
-### Suggestion software
-
-* https://lmstudio.ai/ (windows)
-* https://ollama.com/ (mac, linux)
-* https://github.com/openai/openai-python
-
-<img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=40%>
+      * llava-phi-3-mini-mmproj-f16.gguf (600MB,vision adapter)
+      * llava-phi-3-mini-f16.gguf (7G, main model)
+    * https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF
+      * llava-llama-3.1-8b-mmproj-f16.gguf
+      * Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
 
 
 
-## Javascript!
+### Javascript! 
 
-You can write Javascript now to your heart's content! Examples of how this works after a short preamble, or you can scroll straight to them below.
-
-### Using JS fetch method calling LLM
-
-security issue, but u can consider as follows
+security issue, but u can consider as follows. 
 
   * https://github.com/pmcculler/sd-dynamic-javascript
   * https://github.com/ThereforeGames/unprompted
