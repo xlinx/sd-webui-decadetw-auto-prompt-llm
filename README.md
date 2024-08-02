@@ -3,12 +3,17 @@
 * Calling LLM; auto prompt for batch generate images 
 * embedding LLM into prompts.
 * You will notice the image will have content.
+* [Update Log]
+  * [add|20240730 | LLM Recursive Prompt | Keep ur prompt ahead each request]
+  * [add|20240731 | LLM Vision]
+  * [add|20240803 | translateFunction] When LLM answered, use LLM translate result to your favorite language. like: Chinese. It's just for your reference, which won't affect SD.
 
 ## Motivation
 
 * batch image generate with LLM
 * batch image generate with VLM
 * prompt detail is important
+* Using Recursive prompt auto say a story
 * Calling by text/vision/mix 
   * Enable LLM [text-base] Just 1 sentence
     * when generate forever mode
@@ -82,7 +87,20 @@
     <td colspan="2"><img src="images/readme1.png"></img></td>
  </tr>
 <tr>
-    <td colspan="2"><img src="images/readme4.png"></img></td>
+    <td><b style="font-size:20px">LLM: a superstar on stage. & LLM-vision with a zebra image (okie, cooool show dress. At least we don't have half zebra half human.)</b></td>
+    <td colspan="1"><img src="images/readme4.png"></img></td>
+ </tr>
+ <tr>
+    <td><b style="font-size:20px">LLM: a superstar on stage. (okay, its cool.)</b></td>
+    <td><img src="images/grid-3256.png"></img></td>
+ </tr>
+ <tr>
+    <td><b style="font-size:20px">LLM: a superstar on stage. (Wow... the describe of light is great.)</b></td>
+    <td><img src="images/grid-3257.png"></img></td>
+ </tr>
+ <tr>
+    <td><b style="font-size:20px">LLM: a superstar on stage. (hnn... funny, it does make sense.)</b></td>
+    <td><img src="images/grid-3268.png"></img></td>
  </tr>
 </table>
 
