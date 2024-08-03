@@ -70,7 +70,7 @@
 <tr >
     <td colspan="2">The superstar stands tall in their sparkling costume, surrounded by fans who chant and cheer their name. The lights shine down on them, making their hair shine like silver. The crowd is electric, every muscle tense, waiting for the superstar to perform</td>
  </tr>
-<tr >
+<tr>
     <td colspan="2">etc,.</td>
  </tr>
 </table>

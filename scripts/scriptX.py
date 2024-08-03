@@ -4,7 +4,7 @@ import os
 import sys
 
 import gradio as gr
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 
 import modules
 import modules.ui
@@ -13,12 +13,11 @@ from modules.processing import StableDiffusionProcessingTxt2Img
 
 # from modules.script_callbacks import on_ui_tabs
 from modules.shared import opts
+import logging
 
+log = logging.getLogger('sd')
 # Logging
 log_file = os.path.join(scripts.basedir(), "auto-llm.log")
-
-logger = None
-logger_mode = None
 
 random_symbol = '\U0001f3b2\ufe0f'  # 🎲️
 reuse_symbol = '\u267b\ufe0f'  # ♻️
@@ -86,30 +85,34 @@ class AutoLLM(scripts.Script):
         except:
             print("Couldn't read the image. Make sure the path is correct and the file exists.")
         # https: // platform.openai.com / docs / guides / vision?lang = curl
-        completion = self.client.chat.completions.create(
-            model="",
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"{llm_system_prompt_eye}",
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": f"{llm_ur_prompt_eye}"},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
+        try:
+            completion = self.client.chat.completions.create(
+                model="",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"{llm_system_prompt_eye}",
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"{llm_ur_prompt_eye}"},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                },
                             },
-                        },
-                    ],
-                }
-            ],
-            max_tokens=llm_max_token_eye,
-            temperature=llm_tempture_eye,
-        )
-
+                        ],
+                    }
+                ],
+                max_tokens=llm_max_token_eye,
+                temperature=llm_tempture_eye,
+            )
+        except OpenAIError as e:
+            log.error(f"[][][call_llm_eye_open]Error: {e.message}")
+            self.llm_history_array.append([e.message, e.message, e.message, e.message])
+            return e.message, self.llm_history_array
         # for chunk in completion:
         #     if chunk.choices[0].delta.content:
         #         result = chunk.choices[0].delta.content
@@ -125,21 +128,25 @@ class AutoLLM(scripts.Script):
 
     def call_llm_pythonlib(self, _llm_system_prompt, _llm_ur_prompt, _llm_max_token, llm_tempture, llm_recursive_use,
                            llm_keep_your_prompt_use, llm_api_translate_system_prompt, llm_api_translate_enabled):
-        # print("[][auto-llm][as-assistant] modules.ui.processing.paths", modules.ui.ui_common..infotext)
-
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             _llm_ur_prompt = (_llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
                              self.llm_history_array[self.llm_history_array.__len__() - 1][0]
-        completion = self.client.chat.completions.create(
-            model="",
-            messages=[
-                {"role": "system", "content": _llm_system_prompt},
-                {"role": "user", "content": _llm_ur_prompt}
-            ],
-            max_tokens=_llm_max_token,
-            temperature=llm_tempture,
+        try:
+            completion = self.client.chat.completions.create(
+                model="",
+                messages=[
+                    {"role": "system", "content": _llm_system_prompt},
+                    {"role": "user", "content": _llm_ur_prompt}
+                ],
+                max_tokens=_llm_max_token,
+                temperature=llm_tempture,
 
-        )
+            )
+        except OpenAIError as e:
+            log.error(f"[][32][call_llm_pythonlib]Error: {e.message}")
+            self.llm_history_array.append([e.message, e.message, e.message, e.message])
+            return e.message, self.llm_history_array
+
         result = completion.choices[0].message.content
         result = result.replace('\n', ' ').encode("utf-8").decode("cp950", "ignore")
         result_translate = ""
@@ -154,23 +161,28 @@ class AutoLLM(scripts.Script):
         return result, self.llm_history_array
 
     def call_llm_translate(self, llm_api_translate_system_prompt, llm_api_translate_user_prompt, _llm_max_token):
-        completion2 = self.client.chat.completions.create(
-            model="",
-            messages=[
-                {"role": "system", "content": llm_api_translate_system_prompt},
-                {"role": "user", "content": llm_api_translate_user_prompt}
-            ],
-            max_tokens=_llm_max_token,
-            temperature=0.2,
-        )
+        try:
+            completion2 = self.client.chat.completions.create(
+                model="",
+                messages=[
+                    {"role": "system", "content": llm_api_translate_system_prompt},
+                    {"role": "user", "content": llm_api_translate_user_prompt}
+                ],
+                max_tokens=_llm_max_token,
+                temperature=0.2,
+            )
+        except OpenAIError as e:
+            log.error(f"[][32][call_llm_pythonlib]Error: {e.message}")
+            return e.message
         result_translate = completion2.choices[0].message.content
         result_translate = result_translate.replace('\n', '')
-        print("[][auto-llm][call_llm_translate] ", result_translate)
-
+        log.info("[][auto-llm][call_llm_translate] ", result_translate)
+        log.info(f'[][][][]SD-System-Info: call_llm_translate data: {result_translate} ')
         return result_translate
 
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
+        log.info(f'[][][][][][Init-UI][sd-webui-prompt-auto-llm]: " + str({is_img2img})')
         examples = [
             ["The Moon's orbit around Earth has"],
             ["The smooth Borealis basin in the Northern Hemisphere covers 40%"],
@@ -184,8 +196,10 @@ class AutoLLM(scripts.Script):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
                     llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=True)
-                    llm_recursive_use = gr.Checkbox(label=" Recursive-prompt. Use the prompt from last one🌀", value=False)
-                    llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request", value=False)
+                    llm_recursive_use = gr.Checkbox(label=" Recursive-prompt. Use the prompt from last one🌀",
+                                                    value=False)
+                    llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request",
+                                                           value=False)
 
                     with gr.Row():
                         with gr.Column(scale=2):
@@ -289,7 +303,9 @@ class AutoLLM(scripts.Script):
                                             value="http://localhost:1234/v1")
                     llm_apikey = gr.Textbox(label="0.[LLM-API-Key]", lines=1,
                                             value="lm-studio")
-                    llm_api_translate_enabled = gr.Checkbox(label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference.)", value=True)
+                    llm_api_translate_enabled = gr.Checkbox(
+                        label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference.)",
+                        value=True)
                     llm_api_translate_system_prompt = gr.Textbox(label="0.[LLM-Translate-System-Prompt]", lines=2,
                                                                  value="You are a translator, translate input to chinese, always response in Chinese, not English.")
         llm_button_eye.click(self.call_llm_eye_open,
@@ -335,7 +351,8 @@ class AutoLLM(scripts.Script):
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt,
                                         llm_max_token, llm_tempture,
-                                        llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt, llm_api_translate_enabled)
+                                        llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
+                                        llm_api_translate_enabled)
             g_result = str(r[0])
 
             # g_result += g_result+"\n\n"+translate_r
