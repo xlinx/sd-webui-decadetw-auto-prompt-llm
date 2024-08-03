@@ -66,9 +66,12 @@ class AutoLLM(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
-    def call_llm_eye_open(self, llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye,
-                          llm_max_token_eye):
+    def check_api_uri(self, llm_apiurl, llm_apikey):
+        if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
+            self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
+    def call_llm_eye_open(self, llm_apiurl, llm_apikey,  llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye, llm_tempture_eye,
+                          llm_max_token_eye):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -89,6 +92,8 @@ class AutoLLM(scripts.Script):
             return "[][call_llm_eye_open]missing input image ?" + e, self.llm_history_array
 
         try:
+            self.check_api_uri(llm_apiurl, llm_apikey)
+
             completion = self.client.chat.completions.create(
                 model="",
                 messages=[
@@ -131,14 +136,17 @@ class AutoLLM(scripts.Script):
 
         return result, self.llm_history_array
 
-    def call_llm_pythonlib(self, llm_system_prompt, llm_ur_prompt,
+    def call_llm_pythonlib(self, llm_apiurl, llm_apikey,  llm_system_prompt, llm_ur_prompt,
                            llm_max_token, llm_tempture,
                            llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
                            llm_api_translate_enabled):
+
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_ur_prompt = (llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
                             self.llm_history_array[self.llm_history_array.__len__() - 1][0]
         try:
+            self.check_api_uri(llm_apiurl, llm_apikey)
+
             completion = self.client.chat.completions.create(
                 model="",
                 messages=[
@@ -168,6 +176,7 @@ class AutoLLM(scripts.Script):
 
     def call_llm_translate(self, llm_api_translate_system_prompt, llm_api_translate_user_prompt, _llm_max_token):
         try:
+
             completion2 = self.client.chat.completions.create(
                 model="",
                 messages=[
@@ -306,7 +315,7 @@ class AutoLLM(scripts.Script):
 
                 with gr.Tab("Setup"):
                     llm_apiurl = gr.Textbox(
-                        label="0.[LLM-URL] LMStudio=>http://localhost:1234/v1 ollama=> http://localhost:11434/v1",
+                        label="0.[LLM-URL] | LMStudio=>http://localhost:1234/v1 | ollama=> http://localhost:11434/v1",
                         lines=1,
                         value="http://localhost:1234/v1")
                     llm_apikey = gr.Textbox(label="0.[LLM-API-Key]", lines=1,
@@ -317,10 +326,10 @@ class AutoLLM(scripts.Script):
                     llm_api_translate_system_prompt = gr.Textbox(label="0.[LLM-Translate-System-Prompt]", lines=2,
                                                                  value="You are a translator, translate input to chinese, always response in Chinese, not English.")
         llm_button_eye.click(self.call_llm_eye_open,
-                             inputs=[llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                             inputs=[llm_apiurl, llm_apikey, llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
                                      llm_tempture_eye, llm_max_token_eye],
                              outputs=[llm_llm_answer_eye, llm_history_eye])
-        llm_button.click(self.call_llm_pythonlib, inputs=[llm_system_prompt, llm_ur_prompt,
+        llm_button.click(self.call_llm_pythonlib, inputs=[llm_apiurl, llm_apikey, llm_system_prompt, llm_ur_prompt,
                                                           llm_max_token, llm_tempture,
                                                           llm_recursive_use, llm_keep_your_prompt_use,
                                                           llm_api_translate_system_prompt,
@@ -358,7 +367,7 @@ class AutoLLM(scripts.Script):
                 llm_sendto_txt2img, llm_sendto_img2img):
 
         if llm_is_enabled:
-            r = self.call_llm_pythonlib(llm_system_prompt, llm_ur_prompt,
+            r = self.call_llm_pythonlib(llm_apiurl, llm_apikey, llm_system_prompt, llm_ur_prompt,
                                         llm_max_token, llm_tempture,
                                         llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
                                         llm_api_translate_enabled)
@@ -369,7 +378,7 @@ class AutoLLM(scripts.Script):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result
 
         if llm_is_open_eye:
-            r2 = self.call_llm_eye_open(llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+            r2 = self.call_llm_eye_open(llm_apiurl, llm_apikey, llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
                                         llm_tempture_eye, llm_max_token_eye)
             g_result2 = str(r2[0])
             for i in range(len(p.all_prompts)):
