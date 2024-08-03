@@ -132,12 +132,14 @@
       * small and good for SD-Prompt 
     
 * Enable LLM vision 👀 (VRAM >=16G is better)
-    * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
-      * llava-phi-3-mini-mmproj-f16.gguf (600MB,vision adapter)
-      * llava-phi-3-mini-f16.gguf (7G, main model)
-    * https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF
-      * llava-llama-3.1-8b-mmproj-f16.gguf
-      * Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
+  * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
+    * llava-phi-3-mini-mmproj-f16.gguf (600MB,vision adapter)
+    * llava-phi-3-mini-f16.gguf (7G, main model)
+  * https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF
+    * llava-llama-3.1-8b-mmproj-f16.gguf
+    * Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
+
+<img src="https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF/resolve/main/llama-3.1-unhinged-vision.jpeg" width=40%>
 
 
 
