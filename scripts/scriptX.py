@@ -55,6 +55,18 @@ class AutoLLM(scripts.Script):
     client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
     llm_history_array_eye = []
+    llm_sys_vision_template = ("This is a chat between a user and an assistant. The assistant is helping the user to describe an image.")
+
+    llm_sys_text_template = ("You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
+    llm_sys_translate_template = ("You are a professional and literary Taiwanese translation expert."
+                                  "Please follow the following rules to translate into Taiwanese Traditional Chinese:)"
+                                  "\n- Only the translated text is returned without any explanation."
+                                  "\n- Language: Use Traditional Chinese and Taiwanese idioms for translation, do not use Simplified Chinese and Chinese idioms."
+                                  "\n- Style: In line with Taiwanese writing habits, it is smooth and easy to read, and strives to be literary and meaningful."
+                                  "\n- Nouns: Translate movie titles, book titles, authors, and artist names using Taiwanese common translation methods. Noun translations within the same article must be consistent."
+                                  "\n- Format: All punctuation marks must be full-width, with spaces between Chinese and English."
+                                  "\n- Each sentence should not exceed 30 words."
+                                  "\n- Avoid inverted sentences.")
 
     def __init__(self) -> None:
         self.YOU_LLM = "A superstar on stage."
@@ -227,24 +239,8 @@ class AutoLLM(scripts.Script):
                     with gr.Row():
                         with gr.Column(scale=2):
                             llm_system_prompt = gr.Textbox(label="1. [LLM-System-Prompt]", lines=20,
-                                                           value="You are an AI prompt word "
-                                                                 "engineer. Use the provided "
-                                                                 "keywords to create a beautiful "
-                                                                 "composition. Only the prompt "
-                                                                 "words are needed, "
-                                                                 "not your feelings. Customize the "
-                                                                 "style, scene, decoration, etc., "
-                                                                 "and be as detailed as possible "
-                                                                 "without endings.",
-                                                           placeholder="You are an AI prompt word "
-                                                                       "engineer. Use the provided "
-                                                                       "keywords to create a beautiful "
-                                                                       "composition. Only the prompt "
-                                                                       "words are needed, "
-                                                                       "not your feelings. Customize the "
-                                                                       "style, scene, decoration, etc., "
-                                                                       "and be as detailed as possible "
-                                                                       "without endings."
+                                                           value=self.llm_sys_text_template,
+                                                           placeholder=self.llm_sys_text_template
                                                            )
                         with gr.Column(scale=3):
                             llm_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=2,
@@ -269,6 +265,7 @@ class AutoLLM(scripts.Script):
 
                     llm_history = gr.Dataframe(
                         interactive=True,
+                        wrap=True,
                         label="History/StoryBoard",
                         headers=["llm_answer", "system_prompt", "ur_prompt", "result_translate"],
                         datatype=["str", "str", "str", "str"],
@@ -286,8 +283,8 @@ class AutoLLM(scripts.Script):
                     with gr.Row():
                         with gr.Column(scale=2):
                             llm_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=10,
-                                                               value="This is a chat between a user and an assistant. The assistant is helping the user to describe an image.",
-                                                               placeholder="This is a chat between a user and an assistant. The assistant is helping the user to describe an image.")
+                                                               value=self.llm_sys_vision_template,
+                                                               placeholder=self.llm_sys_vision_template)
                             llm_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=10,
                                                            value="What’s in this image?",
                                                            placeholder="What’s in this image?")
@@ -303,6 +300,7 @@ class AutoLLM(scripts.Script):
                                                           label="LLM Max length(tokens)")
                     llm_history_eye = gr.Dataframe(
                         interactive=True,
+                        wrap=True,
                         label="History/StoryBoard",
                         headers=["llm_answer", "system_prompt", "ur_prompt", "result_translate"],
                         datatype=["str", "str", "str", "str"],
@@ -337,8 +335,8 @@ class AutoLLM(scripts.Script):
                     llm_api_translate_enabled = gr.Checkbox(
                         label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference. )",
                         value=False)
-                    llm_api_translate_system_prompt = gr.Textbox(label="0.[LLM-Translate-System-Prompt]", lines=2,
-                                                                 value="You are a translator, translate input to chinese, always response in Chinese, not English.")
+                    llm_api_translate_system_prompt = gr.Textbox(label=" 0.[LLM-Translate-System-Prompt]", lines=2,
+                                                                 value=self.llm_sys_translate_template)
         llm_button_eye.click(self.call_llm_eye_open,
                              inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye,
                                      llm_ur_prompt_eye,
