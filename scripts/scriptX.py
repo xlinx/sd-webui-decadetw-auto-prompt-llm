@@ -72,7 +72,8 @@ class AutoLLM(scripts.Script):
 
     def call_llm_eye_open(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye, llm_ur_prompt_eye,
                           llm_ur_prompt_image_eye, llm_tempture_eye,
-                          llm_max_token_eye):
+                          llm_max_token_eye, llm_api_translate_system_prompt,
+                          llm_api_translate_enabled):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -88,10 +89,10 @@ class AutoLLM(scripts.Script):
             # print("[][call_llm_eye_open][]base64_image", base64_image)
 
         except Exception as e:
-            log.error(f"[][][call_llm_eye_open]IO Error: {e}")
+            # log.error(f"[][][call_llm_eye_open]IO Error: {e}")
             self.llm_history_array.append(["missing input image ?", e, e, e])
-            return "[][call_llm_eye_open]missing input image ?" + e, self.llm_history_array
-
+            # return "[][call_llm_eye_open]missing input image ?" + e, self.llm_history_array
+            return "missing input image ?", self.llm_history_array
         try:
             self.check_api_uri(llm_apiurl, llm_apikey)
 
@@ -130,7 +131,11 @@ class AutoLLM(scripts.Script):
         # print(chunk.choices[0].delta.content, end="", flush=True)
         result = completion.choices[0].message.content
         result = result.replace('\n', ' ')
-        self.llm_history_array.append([result, llm_system_prompt_eye, llm_ur_prompt_eye])
+        result_translate = ""
+        if llm_api_translate_enabled:
+            result_translate = self.call_llm_translate(llm_api_model_name, llm_api_translate_system_prompt, result,
+                                                       llm_max_token_eye)
+        self.llm_history_array.append([result, llm_system_prompt_eye, llm_ur_prompt_eye, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
         print("[][auto-llm][call_llm_eye_open] ", result)
@@ -166,7 +171,8 @@ class AutoLLM(scripts.Script):
         result = result.replace('\n', ' ')
         result_translate = ""
         if llm_api_translate_enabled:
-            result_translate = self.call_llm_translate(llm_api_model_name, llm_api_translate_system_prompt, result, llm_max_token)
+            result_translate = self.call_llm_translate(llm_api_model_name, llm_api_translate_system_prompt, result,
+                                                       llm_max_token)
 
         self.llm_history_array.append([result, llm_ur_prompt, llm_system_prompt, result_translate])
         if len(self.llm_history_array) > 3:
@@ -175,7 +181,8 @@ class AutoLLM(scripts.Script):
 
         return result, self.llm_history_array
 
-    def call_llm_translate(self, llm_api_model_name,  llm_api_translate_system_prompt, llm_api_translate_user_prompt, _llm_max_token):
+    def call_llm_translate(self, llm_api_model_name, llm_api_translate_system_prompt, llm_api_translate_user_prompt,
+                           _llm_max_token):
         try:
 
             completion2 = self.client.chat.completions.create(
@@ -297,10 +304,10 @@ class AutoLLM(scripts.Script):
                     llm_history_eye = gr.Dataframe(
                         interactive=True,
                         label="History/StoryBoard",
-                        headers=["llm_answer", "system_prompt", "ur_prompt"],
-                        datatype=["str", "str", "str"],
+                        headers=["llm_answer", "system_prompt", "ur_prompt", "result_translate"],
+                        datatype=["str", "str", "str", "str"],
                         row_count=3,
-                        col_count=(3, "fixed"),
+                        col_count=(4, "fixed"),
                     )
                     llm_button_eye = gr.Button("Call LLM-vision above")
 
@@ -336,7 +343,8 @@ class AutoLLM(scripts.Script):
                              inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye,
                                      llm_ur_prompt_eye,
                                      llm_ur_prompt_image_eye, llm_tempture_eye,
-                                     llm_max_token_eye],
+                                     llm_max_token_eye, llm_api_translate_system_prompt,
+                                     llm_api_translate_enabled],
                              outputs=[llm_llm_answer_eye, llm_history_eye])
         llm_button.click(self.call_llm_pythonlib,
                          inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
@@ -392,7 +400,8 @@ class AutoLLM(scripts.Script):
             r2 = self.call_llm_eye_open(llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye,
                                         llm_ur_prompt_eye,
                                         llm_ur_prompt_image_eye, llm_tempture_eye,
-                                        llm_max_token_eye)
+                                        llm_max_token_eye, llm_api_translate_system_prompt,
+                                        llm_api_translate_enabled)
             g_result2 = str(r2[0])
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result2
