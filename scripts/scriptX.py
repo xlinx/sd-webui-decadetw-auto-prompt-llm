@@ -354,6 +354,9 @@ class AutoLLM(scripts.Script):
         llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}", inputs=[llm_llm_answer])
         llm_sendto_img2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('img2img', prompt)}", inputs=[llm_llm_answer])
 
+        for e in [llm_llm_answer, llm_history, llm_llm_answer_eye, llm_history_eye]:
+            e.do_not_save_to_config = True
+
         return [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                 llm_system_prompt, llm_ur_prompt,
                 # llm_llm_answer,
