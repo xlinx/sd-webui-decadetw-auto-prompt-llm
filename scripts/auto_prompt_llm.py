@@ -5,8 +5,6 @@ import os
 import gradio as gr
 from openai import OpenAI, OpenAIError
 
-import modules
-import modules.ui
 from modules import scripts
 from modules.processing import StableDiffusionProcessingTxt2Img
 # from modules.script_callbacks import on_ui_tabs
