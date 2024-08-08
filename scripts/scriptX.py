@@ -225,12 +225,12 @@ class AutoLLM(scripts.Script):
 
         with gr.Blocks():
             # gr.Markdown("Blocks")
-            with gr.Accordion(open=True, label="Auto LLM v20240723"):
+            with gr.Accordion(open=False, label="Auto LLM v20240723"):
                 with gr.Tab("LLM-as-assistant"):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
-                    llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=True)
+                    llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=False)
                     llm_recursive_use = gr.Checkbox(label=" Recursive-prompt. Use the prompt from last one🌀",
                                                     value=False)
                     llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request",
