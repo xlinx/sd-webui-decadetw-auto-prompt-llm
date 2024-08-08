@@ -1,7 +1,6 @@
 import base64
-import io
+import logging
 import os
-import sys
 
 import gradio as gr
 from openai import OpenAI, OpenAIError
@@ -10,10 +9,8 @@ import modules
 import modules.ui
 from modules import scripts
 from modules.processing import StableDiffusionProcessingTxt2Img
-
 # from modules.script_callbacks import on_ui_tabs
 from modules.shared import opts
-import logging
 
 log = logging.getLogger("[auto-llm]")
 # log.setLevel(logging.INFO)
