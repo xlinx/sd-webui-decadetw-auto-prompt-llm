@@ -311,10 +311,8 @@ class AutoLLM(scripts.Script):
                 #
                 # with gr.Tab("LLM-asking-chat"):
                 #     llm_is_asking = gr.Checkbox(label="Enable asking", value=False)
-                with gr.Tab("Gallery"):
-                    gallery = gr.Gallery(
-                        label="Generated images", show_label=False, elem_id="gallery"
-                        , columns=[3], rows=[1], object_fit="contain", height="auto")
+                # with gr.Tab("Gallery"):
+                #     gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=3, rows=1, object_fit="contain", height="auto")
 
                 with gr.Tab("Setup"):
                     gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
