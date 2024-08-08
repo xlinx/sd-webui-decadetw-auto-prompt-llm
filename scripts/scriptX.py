@@ -355,32 +355,41 @@ class AutoLLM(scripts.Script):
         llm_sendto_img2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('img2img', prompt)}", inputs=[llm_llm_answer])
 
         return [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                llm_system_prompt, llm_ur_prompt, llm_llm_answer,
-                llm_history,
+                llm_system_prompt, llm_ur_prompt,
+                # llm_llm_answer,
+                # llm_history,
                 llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey, llm_api_model_name,
                 llm_api_translate_system_prompt, llm_api_translate_enabled,
                 llm_is_open_eye,
                 # llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
-                llm_history_eye,
-                llm_sendto_txt2img, llm_sendto_img2img]
+                llm_tempture_eye,
+                # llm_llm_answer_eye,
+                llm_max_token_eye,
+                # llm_history_eye,
+                # llm_sendto_txt2img, llm_sendto_img2img
+                ]
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
 
     def process(self, p: StableDiffusionProcessingTxt2Img,
                 llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                llm_system_prompt, llm_ur_prompt, llm_llm_answer,
-                llm_history,
+                llm_system_prompt, llm_ur_prompt,
+                # llm_llm_answer,
+                # llm_history,
                 llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey, llm_api_model_name,
                 llm_api_translate_system_prompt, llm_api_translate_enabled,
-                llm_is_open_eye, llm_is_open_eye_last_one_image,
+                llm_is_open_eye,
+                # llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
-                llm_history_eye,
-                llm_sendto_txt2img, llm_sendto_img2img):
+                llm_tempture_eye,
+                # llm_llm_answer_eye,
+                llm_max_token_eye,
+                # llm_history_eye,
+                # llm_sendto_txt2img, llm_sendto_img2img
+                ):
 
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
