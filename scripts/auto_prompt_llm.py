@@ -38,16 +38,6 @@ def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
 
 
-def add_to_prompt_txt2img(self, prompt):
-    modules.ui.apply_setting("prompt", prompt)
-    return prompt
-
-
-def add_to_prompt_img2img(self, prompt):
-    modules.ui.PasteField.__setattr__(self, "prompt", prompt)
-    return prompt
-
-
 class AutoLLM(scripts.Script):
     client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
@@ -247,10 +237,10 @@ class AutoLLM(scripts.Script):
                                                      label="LLM temperature", elem_id="llm_tempture",
                                                      interactive=True,
                                                      hint='temperature (Deterministic) <1 | >1 (More creative)')
-                            llm_top_k = gr.Slider(
-                                elem_id="top_k_slider", label="LLM Top K", value=8, minimum=1, maximum=20, step=1,
-                                interactive=True,
-                                hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
+                            # llm_top_k = gr.Slider(
+                            #     elem_id="top_k_slider", label="LLM Top K", value=8, minimum=1, maximum=20, step=1,
+                            #     interactive=True,
+                            #     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                             llm_llm_answer = gr.Textbox(inputs=self.process, show_copy_button=True, interactive=True,
                                                         label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
                             with gr.Row():
