@@ -1,19 +1,14 @@
 import base64
-import io
+import logging
 import os
-import sys
 
 import gradio as gr
 from openai import OpenAI, OpenAIError
 
-import modules
-import modules.ui
 from modules import scripts
 from modules.processing import StableDiffusionProcessingTxt2Img
-
 # from modules.script_callbacks import on_ui_tabs
 from modules.shared import opts
-import logging
 
 log = logging.getLogger("[auto-llm]")
 # log.setLevel(logging.INFO)
@@ -39,16 +34,6 @@ detect_image_size_symbol = '\U0001F4D0'  # 📐
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
-
-
-def add_to_prompt_txt2img(self, prompt):
-    modules.ui.apply_setting("prompt", prompt)
-    return prompt
-
-
-def add_to_prompt_img2img(self, prompt):
-    modules.ui.PasteField.__setattr__(self, "prompt", prompt)
-    return prompt
 
 
 class AutoLLM(scripts.Script):
@@ -225,12 +210,12 @@ class AutoLLM(scripts.Script):
 
         with gr.Blocks():
             # gr.Markdown("Blocks")
-            with gr.Accordion(open=True, label="Auto LLM v20240723"):
+            with gr.Accordion(open=False, label="Auto LLM v20240723"):
                 with gr.Tab("LLM-as-assistant"):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
-                    llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=True)
+                    llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=False)
                     llm_recursive_use = gr.Checkbox(label=" Recursive-prompt. Use the prompt from last one🌀",
                                                     value=False)
                     llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request",
@@ -250,10 +235,10 @@ class AutoLLM(scripts.Script):
                                                      label="LLM temperature", elem_id="llm_tempture",
                                                      interactive=True,
                                                      hint='temperature (Deterministic) <1 | >1 (More creative)')
-                            llm_top_k = gr.Slider(
-                                elem_id="top_k_slider", label="LLM Top K", value=8, minimum=1, maximum=20, step=1,
-                                interactive=True,
-                                hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
+                            # llm_top_k = gr.Slider(
+                            #     elem_id="top_k_slider", label="LLM Top K", value=8, minimum=1, maximum=20, step=1,
+                            #     interactive=True,
+                            #     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                             llm_llm_answer = gr.Textbox(inputs=self.process, show_copy_button=True, interactive=True,
                                                         label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
                             with gr.Row():
@@ -314,10 +299,8 @@ class AutoLLM(scripts.Script):
                 #
                 # with gr.Tab("LLM-asking-chat"):
                 #     llm_is_asking = gr.Checkbox(label="Enable asking", value=False)
-                with gr.Tab("Gallery"):
-                    gallery = gr.Gallery(
-                        label="Generated images", show_label=False, elem_id="gallery"
-                        , columns=[3], rows=[1], object_fit="contain", height="auto")
+                # with gr.Tab("Gallery"):
+                #     gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=3, rows=1, object_fit="contain", height="auto")
 
                 with gr.Tab("Setup"):
                     gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
@@ -350,38 +333,49 @@ class AutoLLM(scripts.Script):
                                  llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
                                  llm_api_translate_enabled],
                          outputs=[llm_llm_answer, llm_history])
-        llm_sendto_txt2img.click(add_to_prompt_txt2img, inputs=[llm_llm_answer],
-                                 outputs=[]).then(None, _js='switch_to_txt2img', inputs=None,
-                                                  outputs=None)
-        llm_sendto_img2img.click(add_to_prompt_img2img, inputs=[llm_llm_answer],
-                                 outputs=[]).then(None, _js='switch_to_img2img', inputs=None,
-                                                  outputs=None)
+
+        llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}", inputs=[llm_llm_answer])
+        llm_sendto_img2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('img2img', prompt)}", inputs=[llm_llm_answer])
+
+        for e in [llm_llm_answer, llm_history, llm_llm_answer_eye, llm_history_eye]:
+            e.do_not_save_to_config = True
+
         return [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                llm_system_prompt, llm_ur_prompt, llm_llm_answer,
-                llm_history,
+                llm_system_prompt, llm_ur_prompt,
+                # llm_llm_answer,
+                # llm_history,
                 llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey, llm_api_model_name,
                 llm_api_translate_system_prompt, llm_api_translate_enabled,
-                llm_is_open_eye, llm_is_open_eye_last_one_image,
+                llm_is_open_eye,
+                # llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
-                llm_history_eye,
-                llm_sendto_txt2img, llm_sendto_img2img]
+                llm_tempture_eye,
+                # llm_llm_answer_eye,
+                llm_max_token_eye,
+                # llm_history_eye,
+                # llm_sendto_txt2img, llm_sendto_img2img
+                ]
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
 
     def process(self, p: StableDiffusionProcessingTxt2Img,
                 llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                llm_system_prompt, llm_ur_prompt, llm_llm_answer,
-                llm_history,
+                llm_system_prompt, llm_ur_prompt,
+                # llm_llm_answer,
+                # llm_history,
                 llm_max_token, llm_tempture,
                 llm_apiurl, llm_apikey, llm_api_model_name,
                 llm_api_translate_system_prompt, llm_api_translate_enabled,
-                llm_is_open_eye, llm_is_open_eye_last_one_image,
+                llm_is_open_eye,
+                # llm_is_open_eye_last_one_image,
                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                llm_tempture_eye, llm_llm_answer_eye, llm_max_token_eye,
-                llm_history_eye,
-                llm_sendto_txt2img, llm_sendto_img2img):
+                llm_tempture_eye,
+                # llm_llm_answer_eye,
+                llm_max_token_eye,
+                # llm_history_eye,
+                # llm_sendto_txt2img, llm_sendto_img2img
+                ):
 
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
