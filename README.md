@@ -106,7 +106,19 @@
 
 ## Installtion
 
-### Suggestion software
+* You need install LM Studio or ollama first. 
+  * LM Studio: Start the LLM service on port 1234 . 
+  * ollama: Start service on port 11434 .
+* Pick one language model from under list
+  * text base(small ~2G)
+  * text&vision base(a little big ~8G)
+* Start web-ui and install extensions
+  * here https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
+  * or https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
+
+  
+
+## Suggestion software info list
 
 * https://lmstudio.ai/ (win, mac, linux)
 * https://ollama.com/ (win[beta], mac, linux)
