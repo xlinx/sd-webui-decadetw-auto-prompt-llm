@@ -58,7 +58,7 @@ class AutoLLM(scripts.Script):
         super().__init__()
 
     def title(self):
-        return "Dynamic Javascript Prompt"
+        return "Auto LLM"
 
     def show(self, is_img2img):
         return scripts.AlwaysVisible

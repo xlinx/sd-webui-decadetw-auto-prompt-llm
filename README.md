@@ -114,7 +114,8 @@
   * text&vision base(a little big ~8G)
 * Start web-ui and install extensions
   * here https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
-  * or https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
+  * or use default load https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
+    * search llm
 
   
 

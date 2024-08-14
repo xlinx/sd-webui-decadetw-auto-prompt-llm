@@ -1,4 +1,5 @@
 function sendPromptAutoPromptLLM(tabName, prompt){
+    console.log("[][sendPromptAutoPromptLLM][]")
     const textArea = gradioApp().querySelector("#" + tabName + "_prompt > label > textarea");
     let trimCurrentPrompt = textArea.value.trimEnd();
     if (trimCurrentPrompt !== '') {
