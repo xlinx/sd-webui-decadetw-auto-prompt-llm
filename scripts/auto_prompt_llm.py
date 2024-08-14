@@ -412,4 +412,4 @@ class AutoLLM(scripts.Script):
 #         info="get models from local LLM. (:LM Studio)"
 #     )
 
-# script_callbacks.on_ui_tabs(on_ui_tabs)
+# script_callbacks.on_ui_tabs(on_ui_tabs )
