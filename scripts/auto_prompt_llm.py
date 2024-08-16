@@ -1,7 +1,8 @@
 import base64
 import logging
 import os
-
+import enum
+import subprocess
 import gradio as gr
 from openai import OpenAI, OpenAIError
 
@@ -30,6 +31,14 @@ detect_image_size_symbol = '\U0001F4D0'  # 📐
 
 # sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 # sys.stderr = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
+class EnumCmdReturnType(enum.Enum):
+    JUST_CALL = 'just-call'
+    LLM_USER_PROMPT = 'LLM-USER-PROMPT'
+    LLM_VISION_IMG_PATH = 'LLM-VISION-IMG_PATH'
+
+    @classmethod
+    def values(cls):
+        return [e.value for e in cls]
 
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
@@ -40,9 +49,11 @@ class AutoLLM(scripts.Script):
     client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
     llm_history_array_eye = []
-    llm_sys_vision_template = ("This is a chat between a user and an assistant. The assistant is helping the user to describe an image.")
+    llm_sys_vision_template = (
+        "This is a chat between a user and an assistant. The assistant is helping the user to describe an image.")
 
-    llm_sys_text_template = ("You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
+    llm_sys_text_template = (
+        "You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
     llm_sys_translate_template = ("You are a professional and literary Taiwanese translation expert."
                                   "Please follow the following rules to translate into Taiwanese Traditional Chinese:)"
                                   "\n- Only the translated text is returned without any explanation."
@@ -70,7 +81,9 @@ class AutoLLM(scripts.Script):
     def call_llm_eye_open(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye, llm_ur_prompt_eye,
                           llm_ur_prompt_image_eye, llm_tempture_eye,
                           llm_max_token_eye, llm_api_translate_system_prompt,
-                          llm_api_translate_enabled):
+                          llm_api_translate_enabled,
+                          llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
+                          llm_post_action_cmd):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -80,6 +93,9 @@ class AutoLLM(scripts.Script):
             "Extras": opts.outdir_samples or opts.outdir_extras_samples
         }
         # https: // platform.openai.com / docs / guides / vision?lang = curl
+        llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
+        if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in EnumCmdReturnType.values():
+            llm_ur_prompt_image_eye = llm_before_action_cmd_return_value
         try:
             image = open(llm_ur_prompt_image_eye, "rb").read()
             base64_image = base64.b64encode(image).decode("utf-8")
@@ -137,13 +153,20 @@ class AutoLLM(scripts.Script):
             self.llm_history_array.remove(self.llm_history_array[0])
         print("[][auto-llm][call_llm_eye_open] ", result)
 
+        self.do_subprocess_action(llm_apiurl)
+
         return result, self.llm_history_array
 
     def call_llm_pythonlib(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
                            llm_max_token, llm_tempture,
                            llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
-                           llm_api_translate_enabled):
+                           llm_api_translate_enabled,
+                           llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                           llm_post_action_cmd_feedback_type, llm_post_action_cmd):
 
+        llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
+        if EnumCmdReturnType.LLM_USER_PROMPT.value in EnumCmdReturnType.values():
+            llm_ur_prompt += llm_before_action_cmd_return_value
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_ur_prompt = (llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
                             self.llm_history_array[self.llm_history_array.__len__() - 1][0]
@@ -175,8 +198,24 @@ class AutoLLM(scripts.Script):
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
         # print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
-
+        self.do_subprocess_action(llm_post_action_cmd)
         return result, self.llm_history_array
+
+    def do_subprocess_action(self, llm_post_action_cmd):
+        if llm_post_action_cmd.__len__() <= 0:
+            return ""
+        p = subprocess.Popen(llm_post_action_cmd.split(" "), text=True, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        (out, err) = p.communicate()
+        ret = p.wait()
+        ret = True if ret == 0 else False
+        if ret:
+            log.warning("Command succeeded. " + llm_post_action_cmd + " output=" + out)
+            self.llm_history_array.append(["[O]PostAction-Command succeeded.", err, llm_post_action_cmd, out])
+        else:
+            log.warning("Command failed. " + llm_post_action_cmd + " err=" + err)
+            self.llm_history_array.append(["[X]PostAction-Command failed.", err, llm_post_action_cmd, out])
+        return out
 
     def call_llm_translate(self, llm_api_model_name, llm_api_translate_system_prompt, llm_api_translate_user_prompt,
                            _llm_max_token):
@@ -241,6 +280,7 @@ class AutoLLM(scripts.Script):
                             #     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                             llm_llm_answer = gr.Textbox(inputs=self.process, show_copy_button=True, interactive=True,
                                                         label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
+
                             with gr.Row():
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
 
@@ -309,33 +349,73 @@ class AutoLLM(scripts.Script):
                                 "* OLLAMA OpenAI compatibility https://ollama.com/blog/openai-compatibility\n"
                                 )
                     llm_apiurl = gr.Textbox(
-                        label="0.[LLM-URL] | LMStudio=>http://localhost:1234/v1 | ollama=> http://localhost:11434/v1",
+                        label="1.[LLM-URL] | LMStudio=>http://localhost:1234/v1 | ollama=> http://localhost:11434/v1",
                         lines=1,
                         value="http://localhost:1234/v1")
-                    llm_apikey = gr.Textbox(label="0.[LLM-API-Key]", lines=1, value="lm-studio")
-                    llm_api_model_name = gr.Textbox(label="0.[LLM-Model-Name]", lines=1,
+                    llm_apikey = gr.Textbox(label="2.[LLM-API-Key]", lines=1, value="lm-studio")
+                    llm_api_model_name = gr.Textbox(label="3.[LLM-Model-Name]", lines=1,
                                                     placeholder="llama3.1, llama2, gemma2")
+
+                    with gr.Row():
+                        with gr.Column(scale=2):
+                            llm_before_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(),
+                                                                           value='just-call',
+                                                                           label="4.1 Return value type",
+                                                                           info="Capture CMD return value for LLM-xxx?")
+                            # llm_before_action_cmd_feedback = gr.Checkbox(label="Capture CMD return value to LLM-user-prompt",value=False)
+                            # llm_before_action_cmd_feedback_vision = gr.Checkbox(label="Capture CMD return image path to LLM-vision",value=False)
+                            llm_before_action_cmd = gr.Textbox(
+                                label="4.1 Before LLM API call action",
+                                lines=1,
+                                value="",
+                                placeholder="""run getStoryLine.bat | sh myStoryBook.sh'""",
+                                info="call ur script(.bat, .sh) ")
+
+                        with gr.Column(scale=2):
+                            llm_post_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(), value='just-call',
+                                                                         label="4.2 Return value type",
+                                                                         info="Capture CMD return value for LLM-xxx?")
+                            # llm_post_action_cmd_feedback = gr.Checkbox(
+                            #     label="Capture CMD return value to LLM-user-prompt",
+                            #     info="You can call ur script(.bat, .sh) for LLM prompt or call customer cmd. ex: curl",
+                            #     value=False)
+                            # llm_post_action_cmd_feedback_vision = gr.Checkbox(
+                            #     label="Capture CMD return image path to LLM-vision",
+                            #     info="call ur script(.bat, .sh) for LLM-vision image input path",
+                            #     value=False, enable=False)
+                            llm_post_action_cmd = gr.Textbox(
+                                label="4.2 After LLM API call action ",
+                                lines=1,
+                                value="",
+                                placeholder="""curl http://localhost:11434/api/generate -d '{"keep_alive": 0}'""",
+                                info="call ur script(.bat, .sh) ")
+
                     llm_api_translate_enabled = gr.Checkbox(
                         label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference. )",
                         value=False)
-                    llm_api_translate_system_prompt = gr.Textbox(label=" 0.[LLM-Translate-System-Prompt]", lines=2,
+                    llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
         llm_button_eye.click(self.call_llm_eye_open,
                              inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye,
                                      llm_ur_prompt_eye,
                                      llm_ur_prompt_image_eye, llm_tempture_eye,
                                      llm_max_token_eye, llm_api_translate_system_prompt,
-                                     llm_api_translate_enabled],
+                                     llm_api_translate_enabled, llm_before_action_cmd_feedback_type,
+                                     llm_before_action_cmd,
+                                     llm_post_action_cmd_feedback_type, llm_post_action_cmd],
                              outputs=[llm_llm_answer_eye, llm_history_eye])
         llm_button.click(self.call_llm_pythonlib,
                          inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
                                  llm_max_token, llm_tempture,
                                  llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
-                                 llm_api_translate_enabled],
+                                 llm_api_translate_enabled, llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                                 llm_post_action_cmd_feedback_type, llm_post_action_cmd],
                          outputs=[llm_llm_answer, llm_history])
 
-        llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}", inputs=[llm_llm_answer])
-        llm_sendto_img2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('img2img', prompt)}", inputs=[llm_llm_answer])
+        llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}",
+                                 inputs=[llm_llm_answer])
+        llm_sendto_img2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('img2img', prompt)}",
+                                 inputs=[llm_llm_answer])
 
         for e in [llm_llm_answer, llm_history, llm_llm_answer_eye, llm_history_eye]:
             e.do_not_save_to_config = True
@@ -355,6 +435,8 @@ class AutoLLM(scripts.Script):
                 llm_max_token_eye,
                 # llm_history_eye,
                 # llm_sendto_txt2img, llm_sendto_img2img
+                llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
+                llm_post_action_cmd
                 ]
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
@@ -375,13 +457,16 @@ class AutoLLM(scripts.Script):
                 llm_max_token_eye,
                 # llm_history_eye,
                 # llm_sendto_txt2img, llm_sendto_img2img
+                llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
+                llm_post_action_cmd
                 ):
 
         if llm_is_enabled:
             r = self.call_llm_pythonlib(llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
                                         llm_max_token, llm_tempture,
                                         llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
-                                        llm_api_translate_enabled)
+                                        llm_api_translate_enabled, llm_before_action_cmd_feedback_type,
+                                        llm_before_action_cmd, llm_post_action_cmd_feedback_type, llm_post_action_cmd)
             g_result = str(r[0])
 
             # g_result += g_result+"\n\n"+translate_r
@@ -393,7 +478,8 @@ class AutoLLM(scripts.Script):
                                         llm_ur_prompt_eye,
                                         llm_ur_prompt_image_eye, llm_tempture_eye,
                                         llm_max_token_eye, llm_api_translate_system_prompt,
-                                        llm_api_translate_enabled)
+                                        llm_api_translate_enabled, llm_before_action_cmd_feedback_type,
+                                        llm_before_action_cmd, llm_post_action_cmd_feedback_type, llm_post_action_cmd)
             g_result2 = str(r2[0])
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result2
@@ -413,3 +499,4 @@ class AutoLLM(scripts.Script):
 #     )
 
 # script_callbacks.on_ui_tabs(on_ui_tabs )
+#https://platform.openai.com/docs/api-reference/introduction

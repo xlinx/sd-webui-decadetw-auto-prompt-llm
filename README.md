@@ -1,4 +1,24 @@
 # sd-webui-decadetw-auto-prompt-llm
+
+<hr/>
+<p align="center">
+  <a href="https://github.com/feross/standard">
+    <img src="https://img.shields.io/badge/code%20style-standard-green.svg?style=flat-square" alt="">
+  </a>
+  <a href="https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/releases">
+    <img src="https://img.shields.io/github/downloads/xlinx/sd-webui-decadetw-auto-prompt-llm/total.svg?style=flat-square" alt="">
+  </a>
+   <a href="https://travis-ci.org/xlinx/sd-webui-decadetw-auto-prompt-llm/builds">
+    <img src="https://img.shields.io/travis/xlinx/sd-webui-decadetw-auto-prompt-llm.svg?style=flat-square" alt="">
+  </a>
+  <a href="https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/releases/latest">
+    <img src="https://img.shields.io/github/release/xlinx/sd-webui-decadetw-auto-prompt-llm?style=flat-square" alt="">
+  </a>
+<a href="https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/issues">
+    <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square" alt="">
+</a>
+</p>
+
 * Automatic1111 extension 
 * Calling LLM; auto prompt for batch generate images 
 * embedding LLM into prompts.
@@ -8,46 +28,45 @@
   * [add|20240731 | LLM Vision]
   * [add|20240803 | translateFunction] When LLM answered, use LLM translate result to your favorite language. like: Chinese. It's just for your reference, which won't affect SD.
 
-## Motivation
+## 💡Motivation
 
 * batch image generate with LLM
 * batch image generate with VLM
 * prompt detail is important
 * Using Recursive prompt auto say a story
-* Calling by text/vision/mix 
-  * Enable LLM [text-base] Just 1 sentence
-    * when generate forever mode
-      * example as follows figure Red-box. 
-      * just tell LLM who, when or what
-      * LLM will take care details.
-    * when a story-board mode (You can generate serial image follow a story by LLM context.)
-      * example: 2~10 images(like comic book)
-      * a superstar on stage
-      * she is singing
-      * people give her flower
-      * ...etc.
-    * example: 
-      * wo/Vision
-        * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
-        * gemma-2-9b-it-IQ2_M.gguf (3.43GB)
-        * It's small and really nice for SD-prompt;
-  * Enable VLM (open LLM eye to see last-one-img then SD-prompt)👀
-      * w/Vision
-        * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
-        * llava-phi-3-mini-mmproj-f16.gguf (600MB)
-        * llava-phi-3-mini-f16.gguf (7G)
-    * when u download vision version model, u can enable LLM-vision to 
-      * make a story by image or
-      * let LLM see last one image automatically then
-      * LLM will keep brabra...
-  * javascript fetch POST method (install Yourself )
-    * security issue, but u can consider as follows 
-    * https://github.com/pmcculler/sd-dynamic-javascript
-    * https://github.com/ThereforeGames/unprompted
-    * https://github.com/adieyal/sd-dynamic-prompts
-    * https://en.wikipedia.org/wiki/Server-side_request_forgery
-    * and Command Line Arg --allow-code
-
+* Calling by text/vision/mix
+    * Enable LLM [text-base] Just 1 sentence
+        * when generate forever mode
+            * example as follows figure Red-box.
+            * just tell LLM who, when or what
+            * LLM will take care details.
+        * when a story-board mode (You can generate serial image follow a story by LLM context.)
+            * example: 2~10 images(like comic book)
+            * a superstar on stage
+            * she is singing
+            * people give her flower
+            * ...etc.
+        * example:
+            * wo/Vision
+                * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
+                * gemma-2-9b-it-IQ2_M.gguf (3.43GB)
+                * It's small and really nice for SD-prompt;
+    * Enable VLM (open LLM eye to see last-one-img then SD-prompt)👀
+        * w/Vision
+            * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
+            * llava-phi-3-mini-mmproj-f16.gguf (600MB)
+            * llava-phi-3-mini-f16.gguf (7G)
+        * when u download vision version model, u can enable LLM-vision to
+            * make a story by image or
+            * let LLM see last one image automatically then
+            * LLM will keep brabra...
+    * javascript fetch POST method (install Yourself )
+        * security issue, but u can consider as follows
+        * https://github.com/pmcculler/sd-dynamic-javascript
+        * https://github.com/ThereforeGames/unprompted
+        * https://github.com/adieyal/sd-dynamic-prompts
+        * https://en.wikipedia.org/wiki/Server-side_request_forgery
+        * and Command Line Arg --allow-code
 
 ---
 
@@ -102,22 +121,25 @@
     <td><b style="font-size:20px">LLM: a superstar on stage. (hnn... funny, it does make sense.)</b></td>
     <td><img src="images/grid-3268.png"></img></td>
  </tr>
+ <tr>
+    <td><b style="font-size:20px">CHALLENGE  LLM-vision:A Snow White girl walk in forest. (detect ur LLM-Vision Model IQ; if u didnt get white dress and lot of snow.... plz let me know model name)</b></td>
+    <td><img src="images/readme5.png"></img></td>
+ </tr>
 </table>
 
 ## Installtion
 
-* You need install LM Studio or ollama first. 
-  * LM Studio: Start the LLM service on port 1234 . 
-  * ollama: Start service on port 11434 .
+* You need install LM Studio or ollama first.
+    * LM Studio: Start the LLM service on port 1234 .
+    * ollama: Start service on port 11434 .
 * Pick one language model from under list
-  * text base(small ~2G)
-  * text&vision base(a little big ~8G)
+    * text base(small ~2G)
+    * text&vision base(a little big ~8G)
 * Start web-ui and install extensions
-  * here https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
-  * or use default load https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
-    * search llm
-
-  
+    * here https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
+    * or use default
+      load https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
+        * search llm
 
 ## Suggestion software info list
 
@@ -127,47 +149,44 @@
 
 <img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=40%>
 
-
-
-
 ### Suggestion LLM Model
 
 * LLM (normal, chat, assistant)
-  * 4B VRAM<2G
-    * CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF/qwen1.5-4b-chat-q2_k.gguf
-      * https://huggingface.co/CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF
-  * 7B VRAM<8G
-    * ccpl17/Llama-3-Taiwan-8B-Instruct-GGUF/Llama-3-Taiwan-8B-Instruct.Q2_K.gguf
-    * Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix/L3-8B-Stheno-v3.2-IQ3_XXS-imat.gguf
-  * Google-Gemma
-    * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
-    * bartowski/gemma-2-9b-it-GGUF/gemma-2-9b-it-IQ2_M.gguf
-      * small and good for SD-Prompt 
-    
+    * 4B VRAM<2G
+        * CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF/qwen1.5-4b-chat-q2_k.gguf
+            * https://huggingface.co/CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF
+    * 7B VRAM<8G
+        * ccpl17/Llama-3-Taiwan-8B-Instruct-GGUF/Llama-3-Taiwan-8B-Instruct.Q2_K.gguf
+        * Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix/L3-8B-Stheno-v3.2-IQ3_XXS-imat.gguf
+    * Google-Gemma
+        * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
+        * bartowski/gemma-2-9b-it-GGUF/gemma-2-9b-it-IQ2_M.gguf
+            * small and good for SD-Prompt
+
 * Enable LLM vision 👀 (VRAM >=16G is better)
-  * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
-    * llava-phi-3-mini-mmproj-f16.gguf (600MB,vision adapter)
-    * llava-phi-3-mini-f16.gguf (7G, main model)
-  * https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF
-    * llava-llama-3.1-8b-mmproj-f16.gguf
-    * Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
+    * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
+        * llava-phi-3-mini-mmproj-f16.gguf (600MB,vision adapter)
+        * llava-phi-3-mini-f16.gguf (7G, main model)
+    * https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF
+        * llava-llama-3.1-8b-mmproj-f16.gguf
+        * Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
 
 <img src="https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF/resolve/main/llama-3.1-unhinged-vision.jpeg" width=40%>
 
+### Javascript!
 
+security issue, but u can consider as follows.
 
-### Javascript! 
-
-security issue, but u can consider as follows. 
-
-  * https://github.com/pmcculler/sd-dynamic-javascript
-  * https://github.com/ThereforeGames/unprompted
-  * https://github.com/adieyal/sd-dynamic-prompts
-  * https://en.wikipedia.org/wiki/Server-side_request_forgery
-  * and Command Line Arg --allow-code
+* https://github.com/pmcculler/sd-dynamic-javascript
+* https://github.com/ThereforeGames/unprompted
+* https://github.com/adieyal/sd-dynamic-prompts
+* https://en.wikipedia.org/wiki/Server-side_request_forgery
+* and Command Line Arg --allow-code
 
 ## Colophon
 
-Made for fun. I hope if brings you great joy, and perfect hair forever. Contact me with questions and comments, but not threats, please. And feel free to contribute! Pull requests and ideas in Discussions or Issues will be taken quite seriously!
+Made for fun. I hope if brings you great joy, and perfect hair forever. Contact me with questions and comments, but not
+threats, please. And feel free to contribute! Pull requests and ideas in Discussions or Issues will be taken quite
+seriously!
 --- https://decade.tw
 
