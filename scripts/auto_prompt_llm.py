@@ -94,7 +94,8 @@ class AutoLLM(scripts.Script):
         }
         # https: // platform.openai.com / docs / guides / vision?lang = curl
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
-        if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in EnumCmdReturnType.values():
+        if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
+            log.warning(f"[1][call_llm_eye_open][ p, processed, *args]: {print_obj_x(p)} {print_obj_x(processed)} {args}")
             llm_ur_prompt_image_eye = llm_before_action_cmd_return_value
         try:
             image = open(llm_ur_prompt_image_eye, "rb").read()
@@ -153,7 +154,7 @@ class AutoLLM(scripts.Script):
             self.llm_history_array.remove(self.llm_history_array[0])
         print("[][auto-llm][call_llm_eye_open] ", result)
 
-        self.do_subprocess_action(llm_apiurl)
+        self.do_subprocess_action(llm_post_action_cmd)
 
         return result, self.llm_history_array
 
@@ -165,7 +166,7 @@ class AutoLLM(scripts.Script):
                            llm_post_action_cmd_feedback_type, llm_post_action_cmd):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
-        if EnumCmdReturnType.LLM_USER_PROMPT.value in EnumCmdReturnType.values():
+        if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
             llm_ur_prompt += llm_before_action_cmd_return_value
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_ur_prompt = (llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
@@ -400,9 +401,10 @@ class AutoLLM(scripts.Script):
                                      llm_ur_prompt_eye,
                                      llm_ur_prompt_image_eye, llm_tempture_eye,
                                      llm_max_token_eye, llm_api_translate_system_prompt,
-                                     llm_api_translate_enabled, llm_before_action_cmd_feedback_type,
-                                     llm_before_action_cmd,
-                                     llm_post_action_cmd_feedback_type, llm_post_action_cmd],
+                                     llm_api_translate_enabled,
+                                     llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                                     llm_post_action_cmd_feedback_type,
+                                     llm_post_action_cmd],
                              outputs=[llm_llm_answer_eye, llm_history_eye])
         llm_button.click(self.call_llm_pythonlib,
                          inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
@@ -441,51 +443,46 @@ class AutoLLM(scripts.Script):
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
 
-    def process(self, p: StableDiffusionProcessingTxt2Img,
-                llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                llm_system_prompt, llm_ur_prompt,
-                # llm_llm_answer,
-                # llm_history,
-                llm_max_token, llm_tempture,
-                llm_apiurl, llm_apikey, llm_api_model_name,
-                llm_api_translate_system_prompt, llm_api_translate_enabled,
-                llm_is_open_eye,
-                # llm_is_open_eye_last_one_image,
-                llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                llm_tempture_eye,
-                # llm_llm_answer_eye,
-                llm_max_token_eye,
-                # llm_history_eye,
-                # llm_sendto_txt2img, llm_sendto_img2img
-                llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
-                llm_post_action_cmd
-                ):
-
-        if llm_is_enabled:
-            r = self.call_llm_pythonlib(llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
-                                        llm_max_token, llm_tempture,
-                                        llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
-                                        llm_api_translate_enabled, llm_before_action_cmd_feedback_type,
-                                        llm_before_action_cmd, llm_post_action_cmd_feedback_type, llm_post_action_cmd)
+    def process(self, p: StableDiffusionProcessingTxt2Img, *args):
+        global args_dict
+        args_dict = dict(zip(args_keys, args))
+        # if llm_is_enabled:
+        if args_dict.get('llm_is_enabled'):
+            r = self.call_llm_pythonlib(*args)
             g_result = str(r[0])
 
             # g_result += g_result+"\n\n"+translate_r
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result
 
-        if llm_is_open_eye:
-            r2 = self.call_llm_eye_open(llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye,
-                                        llm_ur_prompt_eye,
-                                        llm_ur_prompt_image_eye, llm_tempture_eye,
-                                        llm_max_token_eye, llm_api_translate_system_prompt,
-                                        llm_api_translate_enabled, llm_before_action_cmd_feedback_type,
-                                        llm_before_action_cmd, llm_post_action_cmd_feedback_type, llm_post_action_cmd)
+        # if llm_is_open_eye:
+        if args_dict.get('llm_is_open_eye'):
+            r2 = self.call_llm_eye_open(*args)
             g_result2 = str(r2[0])
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result2
 
         return p.all_prompts[0]
 
+
+args_dict = None
+args_keys = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use',
+             'llm_system_prompt', 'llm_ur_prompt',
+             # llm_llm_answer,
+             # llm_history,
+             'llm_max_token', 'llm_tempture',
+             'llm_apiurl', 'llm_apikey', 'llm_api_model_name',
+             'llm_api_translate_system_prompt', 'llm_api_translate_enabled',
+             'llm_is_open_eye',
+             # llm_is_open_eye_last_one_image,
+             'llm_system_prompt_eye', 'llm_ur_prompt_eye', 'llm_ur_prompt_image_eye',
+             'llm_tempture_eye',
+             # llm_llm_answer_eye,
+             'llm_max_token_eye',
+             # llm_history_eye,
+             # llm_sendto_txt2img, llm_sendto_img2img
+             'llm_before_action_cmd_feedback_type', 'llm_before_action_cmd', 'llm_post_action_cmd_feedback_type',
+             'llm_post_action_cmd']
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")
 #    js_neg_result = gr.Textbox(label="[Negative prompt-JS-Result]", lines=3, value="result")
