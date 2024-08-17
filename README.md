@@ -27,6 +27,7 @@
   * [add|20240730 | LLM Recursive Prompt | Keep ur prompt ahead each request]
   * [add|20240731 | LLM Vision]
   * [add|20240803 | translateFunction] When LLM answered, use LLM translate result to your favorite language. like: Chinese. It's just for your reference, which won't affect SD.
+  * [add|20240808] add before and after action by cmd
 
 ## 💡Motivation
 
@@ -122,8 +123,14 @@
     <td><img src="images/grid-3268.png"></img></td>
  </tr>
  <tr>
-    <td><b style="font-size:20px">CHALLENGE  LLM-vision:A Snow White girl walk in forest. (detect ur LLM-Vision Model IQ; if u didnt get white dress and lot of snow.... plz let me know model name)</b></td>
-    <td><img src="images/readme5.png"></img></td>
+    <td>
+        <b style="font-size:20px">CHALLENGE LLM-vision:A Snow White girl walk in forest. (detect ur LLM-Vision Model IQ; if u didnt get white dress and lot of snow.... plz let me know model name)</b>
+            vision model: 
+            <a href="https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix">
+                Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix
+            </a>
+    </td>
+    <td><img src="images/readme5.png"></img><img src="images/readme55.png"></img></td>
  </tr>
 </table>
 
@@ -146,12 +153,15 @@
 * https://lmstudio.ai/ (win, mac, linux)
 * https://ollama.com/ (win[beta], mac, linux)
 * https://github.com/openai/openai-python
+* https://github.com/LostRuins/koboldcpp (all os)
 
-<img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=40%>
+<img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=50%>
+<img src="https://github.com/LostRuins/koboldcpp/raw/concedo/media/preview3.png" width=33%>
+
 
 ### Suggestion LLM Model
 
-* LLM (normal, chat, assistant)
+* LLM-text (normal, chat, assistant)
     * 4B VRAM<2G
         * CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF/qwen1.5-4b-chat-q2_k.gguf
             * https://huggingface.co/CHE-72/Qwen1.5-4B-Chat-Q2_K-GGUF
@@ -163,15 +173,21 @@
         * bartowski/gemma-2-9b-it-GGUF/gemma-2-9b-it-IQ2_M.gguf
             * small and good for SD-Prompt
 
-* Enable LLM vision 👀 (VRAM >=16G is better)
+* LLM-vision 👀 (work with SDXL, VRAM >=8G is better )
     * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
         * llava-phi-3-mini-mmproj-f16.gguf (600MB,vision adapter)
-        * llava-phi-3-mini-f16.gguf (7G, main model)
+        * ⭐⭐⭐llava-phi-3-mini-f16.gguf (7G, main model)
     * https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF
         * llava-llama-3.1-8b-mmproj-f16.gguf
-        * Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
+        * ⭐⭐⭐Llama-3.1-Unhinged-Vision-8B-Q8.0.gguf
+    * https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix#quantization-information
+      * quantization_options = ["Q4_K_M", "Q4_K_S", "IQ4_XS", "Q5_K_M", "Q5_K_S","Q6_K", "Q8_0", "IQ3_M", "IQ3_S", "IQ3_XXS"]
+      * ⭐⭐⭐⭐⭐for low VRAM <font color=#FFD700>**super small**</font>: IQ3_XXS (2.83G)
+      * in fact, it's enough uses.
+        
 
 <img src="https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF/resolve/main/llama-3.1-unhinged-vision.jpeg" width=40%>
+<img src="https://github.com/InternLM/lmdeploy/assets/36994684/0cf8d00f-e86b-40ba-9b54-dc8f1bc6c8d8" width=40%>
 
 ### Javascript!
 

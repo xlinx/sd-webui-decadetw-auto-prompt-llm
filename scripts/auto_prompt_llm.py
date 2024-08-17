@@ -271,7 +271,7 @@ class AutoLLM(scripts.Script):
                             llm_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=2,
                                                        value="A superstar on stage.",
                                                        placeholder="A superstar on stage.")
-                            llm_tempture = gr.Slider(-2, 2, value=0.9, step=0.01,
+                            llm_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
                                                      label="LLM temperature", elem_id="llm_tempture",
                                                      interactive=True,
                                                      hint='temperature (Deterministic) <1 | >1 (More creative)')
@@ -288,7 +288,7 @@ class AutoLLM(scripts.Script):
                                 llm_sendto_img2img = gr.Button("send to img2img")
 
                             llm_max_token = gr.Slider(5, 500, value=50, step=5, label="LLM Max length(tokens)")
-
+                    llm_button = gr.Button("Call LLM above")
                     llm_history = gr.Dataframe(
                         interactive=True,
                         wrap=True,
@@ -299,7 +299,7 @@ class AutoLLM(scripts.Script):
                         col_count=(4, "fixed"),
                     )
 
-                    llm_button = gr.Button("Call LLM above")
+
 
                 with gr.Tab("LLM-vision"):
                     llm_is_open_eye = gr.Checkbox(label="Enable LLM-vision👀", value=False)
@@ -316,7 +316,7 @@ class AutoLLM(scripts.Script):
                                                            placeholder="What’s in this image?")
                         with gr.Column(scale=3):
                             llm_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type="filepath")
-                            llm_tempture_eye = gr.Slider(-2, 2, value=0.9, step=0.01,
+                            llm_tempture_eye = gr.Slider(-2, 2, value=0.1, step=0.01,
                                                          label="LLM temperature (Deterministic) <1 | >1 (More creative)")
                             llm_llm_answer_eye = gr.Textbox(inputs=self.process, show_copy_button=True,
                                                             interactive=True,
@@ -324,6 +324,7 @@ class AutoLLM(scripts.Script):
                                                             placeholder="LLM says.")
                             llm_max_token_eye = gr.Slider(5, 500, value=50, step=5,
                                                           label="LLM Max length(tokens)")
+                    llm_button_eye = gr.Button("Call LLM-vision above")
                     llm_history_eye = gr.Dataframe(
                         interactive=True,
                         wrap=True,
@@ -333,7 +334,7 @@ class AutoLLM(scripts.Script):
                         row_count=3,
                         col_count=(4, "fixed"),
                     )
-                    llm_button_eye = gr.Button("Call LLM-vision above")
+
 
                 # with gr.Tab("LLM-through-embeddings"):
                 #     llm_is_through = gr.Checkbox(label="Enable LLM-through", value=False)
