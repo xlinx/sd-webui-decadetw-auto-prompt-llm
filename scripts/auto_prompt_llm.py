@@ -78,10 +78,21 @@ class AutoLLM(scripts.Script):
         if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
             self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
-    def call_llm_eye_open(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye, llm_ur_prompt_eye,
-                          llm_ur_prompt_image_eye, llm_tempture_eye,
-                          llm_max_token_eye, llm_api_translate_system_prompt,
-                          llm_api_translate_enabled,
+    def call_llm_eye_open(self,  llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                          llm_system_prompt, llm_ur_prompt,
+                          # llm_llm_answer,
+                          # llm_history,
+                          llm_max_token, llm_tempture,
+                          llm_apiurl, llm_apikey, llm_api_model_name,
+                          llm_api_translate_system_prompt, llm_api_translate_enabled,
+                          llm_is_open_eye,
+                          # llm_is_open_eye_last_one_image,
+                          llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                          llm_tempture_eye,
+                          # llm_llm_answer_eye,
+                          llm_max_token_eye,
+                          # llm_history_eye,
+                          # llm_sendto_txt2img, llm_sendto_img2img
                           llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                           llm_post_action_cmd):
         base64_image = ""
@@ -95,7 +106,8 @@ class AutoLLM(scripts.Script):
         # https: // platform.openai.com / docs / guides / vision?lang = curl
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
-            log.warning(f"[1][call_llm_eye_open][ p, processed, *args]: {print_obj_x(p)} {print_obj_x(processed)} {args}")
+            log.warning(
+                f"[1][call_llm_eye_open][ p, processed, *args]:  {print_obj_x(processed)} {args}")
             llm_ur_prompt_image_eye = llm_before_action_cmd_return_value
         try:
             image = open(llm_ur_prompt_image_eye, "rb").read()
@@ -158,12 +170,24 @@ class AutoLLM(scripts.Script):
 
         return result, self.llm_history_array
 
-    def call_llm_pythonlib(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
+    def call_llm_pythonlib(self,  llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                           llm_system_prompt, llm_ur_prompt,
+                           # llm_llm_answer,
+                           # llm_history,
                            llm_max_token, llm_tempture,
-                           llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
-                           llm_api_translate_enabled,
+                           llm_apiurl, llm_apikey, llm_api_model_name,
+                           llm_api_translate_system_prompt, llm_api_translate_enabled,
+                           llm_is_open_eye,
+                           # llm_is_open_eye_last_one_image,
+                           llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                           llm_tempture_eye,
+                           # llm_llm_answer_eye,
+                           llm_max_token_eye,
+                           # llm_history_eye,
+                           # llm_sendto_txt2img, llm_sendto_img2img
                            llm_before_action_cmd_feedback_type, llm_before_action_cmd,
-                           llm_post_action_cmd_feedback_type, llm_post_action_cmd):
+                           llm_post_action_cmd_feedback_type,
+                           llm_post_action_cmd):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
@@ -299,8 +323,6 @@ class AutoLLM(scripts.Script):
                         col_count=(4, "fixed"),
                     )
 
-
-
                 with gr.Tab("LLM-vision"):
                     llm_is_open_eye = gr.Checkbox(label="Enable LLM-vision👀", value=False)
                     llm_is_open_eye_last_one_image = gr.Checkbox(
@@ -334,7 +356,6 @@ class AutoLLM(scripts.Script):
                         row_count=3,
                         col_count=(4, "fixed"),
                     )
-
 
                 # with gr.Tab("LLM-through-embeddings"):
                 #     llm_is_through = gr.Checkbox(label="Enable LLM-through", value=False)
@@ -398,21 +419,46 @@ class AutoLLM(scripts.Script):
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
         llm_button_eye.click(self.call_llm_eye_open,
-                             inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt_eye,
-                                     llm_ur_prompt_eye,
-                                     llm_ur_prompt_image_eye, llm_tempture_eye,
-                                     llm_max_token_eye, llm_api_translate_system_prompt,
-                                     llm_api_translate_enabled,
+                             inputs=[llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                                     llm_system_prompt, llm_ur_prompt,
+                                     # llm_llm_answer,
+                                     # llm_history,
+                                     llm_max_token, llm_tempture,
+                                     llm_apiurl, llm_apikey, llm_api_model_name,
+                                     llm_api_translate_system_prompt, llm_api_translate_enabled,
+                                     llm_is_open_eye,
+                                     # llm_is_open_eye_last_one_image,
+                                     llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                                     llm_tempture_eye,
+                                     # llm_llm_answer_eye,
+                                     llm_max_token_eye,
+                                     # llm_history_eye,
+                                     # llm_sendto_txt2img, llm_sendto_img2img
                                      llm_before_action_cmd_feedback_type, llm_before_action_cmd,
                                      llm_post_action_cmd_feedback_type,
-                                     llm_post_action_cmd],
+                                     llm_post_action_cmd
+                                     ],
                              outputs=[llm_llm_answer_eye, llm_history_eye])
         llm_button.click(self.call_llm_pythonlib,
-                         inputs=[llm_apiurl, llm_apikey, llm_api_model_name, llm_system_prompt, llm_ur_prompt,
+                         inputs=[llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                                 llm_system_prompt, llm_ur_prompt,
+                                 # llm_llm_answer,
+                                 # llm_history,
                                  llm_max_token, llm_tempture,
-                                 llm_recursive_use, llm_keep_your_prompt_use, llm_api_translate_system_prompt,
-                                 llm_api_translate_enabled, llm_before_action_cmd_feedback_type, llm_before_action_cmd,
-                                 llm_post_action_cmd_feedback_type, llm_post_action_cmd],
+                                 llm_apiurl, llm_apikey, llm_api_model_name,
+                                 llm_api_translate_system_prompt, llm_api_translate_enabled,
+                                 llm_is_open_eye,
+                                 # llm_is_open_eye_last_one_image,
+                                 llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
+                                 llm_tempture_eye,
+                                 # llm_llm_answer_eye,
+                                 llm_max_token_eye,
+                                 # llm_history_eye,
+                                 # llm_sendto_txt2img, llm_sendto_img2img
+                                 llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                                 llm_post_action_cmd_feedback_type,
+                                 llm_post_action_cmd
+                                 ],
                          outputs=[llm_llm_answer, llm_history])
 
         llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}",

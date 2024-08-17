@@ -155,9 +155,16 @@
 * https://github.com/openai/openai-python
 * https://github.com/LostRuins/koboldcpp (all os)
 
-<img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=50%>
-<img src="https://github.com/LostRuins/koboldcpp/raw/concedo/media/preview3.png" width=33%>
 
+
+<table style="border-width:0px" >
+ <tr>
+    <img src="https://lmstudio.ai/static/media/demo2.9df5a0e5a9f1d72715e0.gif" width=50%>
+ </tr>
+ <tr>
+    <img src="https://github.com/LostRuins/koboldcpp/raw/concedo/media/preview3.png" width=33%>
+ </tr>
+</table>
 
 ### Suggestion LLM Model
 
