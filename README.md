@@ -125,12 +125,37 @@
  <tr>
     <td>
         <b style="font-size:20px">CHALLENGE LLM-vision:A Snow White girl walk in forest. (detect ur LLM-Vision Model IQ; if u didnt get white dress and lot of snow.... plz let me know model name)</b>
-            vision model: 
-            <a href="https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix">
-                Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix
+             <hr>
+            <li>vision model:  
+            <a href="https://civitai.com/models/618692/flux?modelVersionId=691639">
+                Flux.1 D
             </a>
+            </li>
     </td>
     <td><img src="images/readme5.png"></img><img src="images/readme55.png"></img></td>
+ </tr>
+<tr>
+    <td>
+        <b style="font-size:20px">FLUX model; hnn...NSFW show. Im not mean that, but LLM isn't wrong. (Trigger more details; that u never thought about it.)</b>
+            <hr>
+            <li>civitai SD-base model: 
+            <a href="https://civitai.com/models/618692/flux?modelVersionId=691639">
+                Flux.1 D
+            </a>
+            </li>
+            <li>HuggingFace LLM-text-vision model: 
+            <a href="https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix">
+                Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix
+            </a>
+            </li>
+            <li>extension (send sd to mobile: LINE, Telegram, Discord):</li>
+            <li>
+            <a href="https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime">
+               https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime
+            </a>
+            </li>
+    </td>
+    <td><img src="images/nsfw_show.png"></img></td>
  </tr>
 </table>
 

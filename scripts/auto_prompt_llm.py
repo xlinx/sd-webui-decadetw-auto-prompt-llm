@@ -50,7 +50,7 @@ class AutoLLM(scripts.Script):
     llm_history_array = []
     llm_history_array_eye = []
     llm_sys_vision_template = (
-        "This is a chat between a user and an assistant. The assistant is helping the user to describe an image.")
+        "You are an AI prompt word engineer. Use the provided image to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
 
     llm_sys_text_template = (
         "You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
