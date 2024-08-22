@@ -368,7 +368,7 @@ class AutoLLM(scripts.Script):
                 with gr.Tab("Setup"):
                     gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
                                 "* API-URI: ollama  => http://localhost:11434/v1 \n"
-                                "* API-ModelName: LMStudio can be empty is fine select in LMStudio App; ollama should set like: ollama3.1 (cmd:ollama list)\n"
+                                "* API-ModelName: LMStudio can be empty here is fine; select it LMStudio App; ollama should set like: llama3.1 (cmd:ollama list)\n"
                                 "* OLLAMA OpenAI compatibility https://ollama.com/blog/openai-compatibility\n"
                                 )
                     llm_apiurl = gr.Textbox(

@@ -19,15 +19,20 @@
 </a>
 </p>
 
-* Automatic1111 extension 
+* ComfyUI extension 
+  * https://github.com/xlinx/ComfyUI-decadetw-auto-prompt-llm
+* Automatic1111|Forge extension 
+  * https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
 * Calling LLM; auto prompt for batch generate images 
 * embedding LLM into prompts.
 * You will notice the image will have content.
 * [Update Log]
-  * [add|20240730 | LLM Recursive Prompt | Keep ur prompt ahead each request]
-  * [add|20240731 | LLM Vision]
-  * [add|20240803 | translateFunction] When LLM answered, use LLM translate result to your favorite language. like: Chinese. It's just for your reference, which won't affect SD.
-  * [add|20240808] add before and after action by cmd
+  * [add|20240730 | 🟢LLM Recursive Prompt | 🟢Keep ur prompt ahead each request]
+  * [add|20240731 | 🟢LLM Vision]
+  * [add|20240803 | 🟢translateFunction] 
+    * When LLM answered, use LLM translate result to your favorite language. 
+      * ex: Chinese. It's just for your reference, which won't affect SD.
+  * [add|20240808]  🟢add before and after action by cmd
 
 ## 💡Motivation
 
@@ -73,6 +78,15 @@
 
 
 <table style="border-width:0px" >
+<tr>
+    <td colspan="2"><b style="font-size:20px">[🟢] stable-diffusion-webui-AUTOMATIC1111</b></td>
+</tr>
+<tr>
+    <td colspan="2"><b style="font-size:20px">[🟢] stable-diffusion-webui-forge</b></td>
+</tr>
+<tr>
+    <td colspan="2"><b style="font-size:20px">[🟠] others gradio.let me know on issue pages</b></td>
+</tr>
  <tr>
     <td><b style="font-size:30px">1. sd-webui-prompt</b></td>
     <td><b style="font-size:30px">2. LLM-Your-prompt</b></td>
@@ -91,7 +105,17 @@
     <td colspan="2">The superstar stands tall in their sparkling costume, surrounded by fans who chant and cheer their name. The lights shine down on them, making their hair shine like silver. The crowd is electric, every muscle tense, waiting for the superstar to perform</td>
  </tr>
 <tr>
-    <td colspan="2">etc,.</td>
+    <td colspan="2">
+<b style="font-size:30px">4. SD-Web-UI and ComfyUI Version Perview</b>
+
+* ComfyUI extension 
+  * https://github.com/xlinx/ComfyUI-decadetw-auto-prompt-llm
+* Automatic1111|Forge extension 
+  * https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
+</td>
+ </tr>
+<tr>
+    <td colspan="2"><img src="images/comfyui_r1.png"></img></td>
  </tr>
 </table>
 <table style="border-width:0px" >
@@ -230,6 +254,12 @@ security issue, but u can consider as follows.
 * https://github.com/adieyal/sd-dynamic-prompts
 * https://en.wikipedia.org/wiki/Server-side_request_forgery
 * and Command Line Arg --allow-code
+
+
+## Buy me a Coca cola ☕
+
+https://buymeacoffee.com/xxoooxx
+
 
 ## Colophon
 
