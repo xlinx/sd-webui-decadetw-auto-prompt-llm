@@ -1,4 +1,15 @@
-# sd-webui-decadetw-auto-prompt-llm
+### Quick Links
+
+* Auto prompt by LLM and LLM-Vision (Trigger more details out inside model) 
+    * sd-web-ui: https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
+    * ComfyUI:   https://github.com/xlinx/ComfyUI-decadetw-auto-prompt-llm
+* Automatic1111 | Forge extension  (LINE | Telegram | Discord)
+  * sd-web-ui:https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime
+  * ComfyUI:  https://github.com/xlinx/ComfyUI-decadetw-auto-messaging-realtime
+
+<hr/>
+
+# sd-web-ui-decadetw-auto-prompt-llm
 
 <hr/>
 <p align="center">
@@ -18,11 +29,6 @@
     <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square" alt="">
 </a>
 </p>
-
-* ComfyUI extension 
-  * https://github.com/xlinx/ComfyUI-decadetw-auto-prompt-llm
-* Automatic1111|Forge extension 
-  * https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
 * Calling LLM; auto prompt for batch generate images 
 * embedding LLM into prompts.
 * You will notice the image will have content.
