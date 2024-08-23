@@ -1,15 +1,14 @@
 ### Quick Links
 
 * Auto prompt by LLM and LLM-Vision (Trigger more details out inside model) 
-    * sd-web-ui: https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
+    * SD-WEB-UI: https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
     * ComfyUI:   https://github.com/xlinx/ComfyUI-decadetw-auto-prompt-llm
-* Automatic1111 | Forge extension  (LINE | Telegram | Discord)
-  * sd-web-ui:https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime
+* Auto msg to ur mobile  (LINE | Telegram | Discord)
+  * SD-WEB-UI :https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime
   * ComfyUI:  https://github.com/xlinx/ComfyUI-decadetw-auto-messaging-realtime
-
 <hr/>
 
-# sd-web-ui-decadetw-auto-prompt-llm
+# SD-WEB-UI | ComfyUI | decadetw-Auto-Prompt-LLM-Vision
 
 <hr/>
 <p align="center">
@@ -29,61 +28,62 @@
     <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat-square" alt="">
 </a>
 </p>
-* Calling LLM; auto prompt for batch generate images 
-* embedding LLM into prompts.
-* You will notice the image will have content.
-* [Update Log]
-  * [add|20240730 | 🟢LLM Recursive Prompt | 🟢Keep ur prompt ahead each request]
-  * [add|20240731 | 🟢LLM Vision]
-  * [add|20240803 | 🟢translateFunction] 
+
+#### Update Log
+  * [add|20240730] | 🟢 LLM Recursive Prompt
+  * [add|20240730] | 🟢 Keep ur prompt ahead each request
+  * [add|20240731] | 🟢 LLM Vision
+  * [add|20240803] | 🟢 translateFunction 
     * When LLM answered, use LLM translate result to your favorite language. 
       * ex: Chinese. It's just for your reference, which won't affect SD.
-  * [add|20240808]  🟢add before and after action by cmd
+  * [add|20240808] | 🟠 Before and After script | exe-command
+  * [add|20240808] | 🟠 release LLM VRAM everytimes
 
-## 💡Motivation
-
-* batch image generate with LLM
-* batch image generate with VLM
+## Motivation💡
+* Call LLM       : auto prompt for batch generate images 
+* Call LLM-Vision: auto prompt for batch generate images
+* Image will get more details that u never though before.
 * prompt detail is important
-* Using Recursive prompt auto say a story
-* Calling by text/vision/mix
-    * Enable LLM [text-base] Just 1 sentence
-        * when generate forever mode
-            * example as follows figure Red-box.
-            * just tell LLM who, when or what
-            * LLM will take care details.
-        * when a story-board mode (You can generate serial image follow a story by LLM context.)
-            * example: 2~10 images(like comic book)
-            * a superstar on stage
-            * she is singing
-            * people give her flower
-            * ...etc.
-        * example:
-            * wo/Vision
-                * https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
-                * gemma-2-9b-it-IQ2_M.gguf (3.43GB)
-                * It's small and really nice for SD-prompt;
-    * Enable VLM (open LLM eye to see last-one-img then SD-prompt)👀
-        * w/Vision
-            * https://huggingface.co/xtuner/llava-phi-3-mini-gguf
-            * llava-phi-3-mini-mmproj-f16.gguf (600MB)
-            * llava-phi-3-mini-f16.gguf (7G)
-        * when u download vision version model, u can enable LLM-vision to
-            * make a story by image or
-            * let LLM see last one image automatically then
-            * LLM will keep brabra...
-    * javascript fetch POST method (install Yourself )
-        * security issue, but u can consider as follows
-        * https://github.com/pmcculler/sd-dynamic-javascript
-        * https://github.com/ThereforeGames/unprompted
-        * https://github.com/adieyal/sd-dynamic-prompts
-        * https://en.wikipedia.org/wiki/Server-side_request_forgery
-        * and Command Line Arg --allow-code
+
+## Usage
+
+#### LLM-Text
+* batch image generate with LLM
+    * a story
+
+* Using Recursive prompt say a story with image generate
+* Using LLM
+  * when generate forever mode
+      * example as follows figure Red-box.
+      * just tell LLM who, when or what
+      * LLM will take care details.
+  * when a story-board mode (You can generate serial image follow a story by LLM context.)
+      * its like comic book
+      * a superstar on stage
+      * she is singing
+      * people give her flower
+      * a fashion men is walking.
+#### LLM-Vision  👀
+* batch image generate with LLM-Vision
+  * let LLM-Vision see a magazine
+  * see series of image 
+  * see last-one-img for next-image
+  * make a serious of image like comic
+
+#### Before and After script
+* support load script or exe-command Before-LLM and After-LLM
+* javascript fetch POST method (install Yourself )
+    * security issue, but u can consider as follows
+    * https://github.com/pmcculler/sd-dynamic-javascript
+    * https://github.com/ThereforeGames/unprompted
+    * https://github.com/adieyal/sd-dynamic-prompts
+    * https://en.wikipedia.org/wiki/Server-side_request_forgery
+    * and Command Line Arg --allow-code
 
 ---
 
 
-<table style="border-width:0px" >
+<table>
 <tr>
     <td colspan="2"><b style="font-size:20px">[🟢] stable-diffusion-webui-AUTOMATIC1111</b></td>
 </tr>
@@ -91,18 +91,33 @@
     <td colspan="2"><b style="font-size:20px">[🟢] stable-diffusion-webui-forge</b></td>
 </tr>
 <tr>
-    <td colspan="2"><b style="font-size:20px">[🟠] others gradio.let me know on issue pages</b></td>
+    <td colspan="2"><b style="font-size:20px">[🟢] ComfyUI</b></td>
 </tr>
  <tr>
-    <td><b style="font-size:30px">1. sd-webui-prompt</b></td>
-    <td><b style="font-size:30px">2. LLM-Your-prompt</b></td>
+    <td colspan="2"><b style="font-size:30px">1. SD-Prompt ✦ </b></td>
+    
  </tr>
  <tr>
-    <td>1girl</td>
-    <td>a superstar on stage.</td>
+    <td colspan="2">1girl</td>
  </tr>
 <tr>
-    <td colspan="2"><b style="font-size:30px">3. LLM will answer other detail</b></td>
+    <td><b style="font-size:30px">2.1 LLM-Text ✦</b></td>
+    <td><b style="font-size:30px">2.2 LLM-Vision ✦</b></td>
+ </tr>
+ <tr>
+    <td>a super star on stage.</td>
+    <td>Who is she in image?</td>
+ </tr>
+<tr>
+    <td><b style="font-size:20px">2.3 LLM-Text-sys-prompt ✦</b></td>
+    <td><b style="font-size:20px">2.4 LLM-Vision-sys-prompt ✦</b></td>
+ </tr>
+ <tr>
+    <td>You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.</td>
+    <td>You are an AI prompt word engineer. Use the provided image to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.</td>
+ </tr>
+<tr>
+    <td colspan="2"><b style="font-size:30px">3. LLM will answer other detail ✦</b></td>
  </tr>
 <tr >
     <td colspan="2"> The superstar, with their hair flowing in the wind, stands on the stage. The lights dance around them, creating a magical moment that fills everyone present with awe. Their eyes shine bright, as if they are ready to take on the world.</td>
@@ -110,82 +125,114 @@
 <tr >
     <td colspan="2">The superstar stands tall in their sparkling costume, surrounded by fans who chant and cheer their name. The lights shine down on them, making their hair shine like silver. The crowd is electric, every muscle tense, waiting for the superstar to perform</td>
  </tr>
-<tr>
-    <td colspan="2">
-<b style="font-size:30px">4. SD-Web-UI and ComfyUI Version Perview</b>
-
-* ComfyUI extension 
-  * https://github.com/xlinx/ComfyUI-decadetw-auto-prompt-llm
-* Automatic1111|Forge extension 
-  * https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
-</td>
- </tr>
-<tr>
-    <td colspan="2"><img src="images/comfyui_r1.png"></img></td>
- </tr>
 </table>
+<table>
+    <tr>
+        <td colspan="2">
+            <b style="font-size:30px">4. Main Interface | sd-web-ui | ComfyUI </b>
+        </td>
+     </tr>
+    <tr>
+        <td><img src="images/rm_mainui_sdwebui.png"></td>
+        <td><img src="images/rm_mainui_comfyui.png"></td>
+     </tr>
+    <tr>
+        <td colspan="2"><img src="images/rm_use1.png"></img></td>
+     </tr>
+    <tr>
+        <td colspan="2"><img src="images/rm_use2.png"></img></td>
+     </tr>
+</table>
+
+### Usage
+
 <table style="border-width:0px" >
- <tr>
-    <td><b style="font-size:20px">LLM as text-assist (VRAM~2G-8G)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></td>
-    <td><b style="font-size:20px">LLM as vision-assistant (VRAM>8G)</b></td>
+<tr>
+    <td>
+        <b style="font-size:20px">Input</b>
+    </td>
+    <td>
+       <b style="font-size:20px">Output</b>
+    </td>
  </tr>
  <tr>
-    <td><img src="images/readme0.png"></img></td>
-    <td><img src="images/readme3.png"></img></td>
- </tr>
- <tr>
-    <td colspan="2"><img src="images/readme1.png"></img></td>
+    <td> 
+        <b style="font-size:20px">LLM-Text: a superstar on stage.</b> 
+        <hr/>
+        <b style="font-size:20px">LLM-Vision: What's pose in this image?.</b> 
+        <hr/>
+        (okay, its cool.)
+    </td>
+    <td>
+        <img width="300" src="images/u1.png" alt=""/>
+    </td>
  </tr>
 <tr>
-    <td><b style="font-size:20px">LLM: a superstar on stage. & LLM-vision with a zebra image (okie, cooool show dress. At least we don't have half zebra half human.)</b></td>
-    <td colspan="1"><img src="images/readme4.png"></img></td>
+    <td>
+        <b style="font-size:20px">LLM-Text: a superstar on stage.</b> 
+        <hr/>
+        <b style="font-size:20px">LLM-Vision: with a zebra image</b> 
+        <hr/>
+        (okie, cooool show dress. At least we don't have half zebra half human.)
+    </td>
+    <td colspan="1"><img width="300" src="images/u2.png" alt=""></img></td>
  </tr>
  <tr>
-    <td><b style="font-size:20px">LLM: a superstar on stage. (okay, its cool.)</b></td>
-    <td><img src="images/grid-3256.png"></img></td>
+    <td><b style="font-size:20px">LLM-Text: a superstar on stage. </b>
+        <hr/>(okay, its cool.)</td>
+    <td><img width="300" src="images/u3.png"></img></td>
  </tr>
  <tr>
-    <td><b style="font-size:20px">LLM: a superstar on stage. (Wow... the describe of light is great.)</b></td>
-    <td><img src="images/grid-3257.png"></img></td>
+    <td><b style="font-size:20px">LLM: a superstar on stage.</b><hr/> (Wow... the describe of light is great.)</td>
+    <td><img width="300" src="images/u4.png"></img></td>
  </tr>
  <tr>
-    <td><b style="font-size:20px">LLM: a superstar on stage. (hnn... funny, it does make sense.)</b></td>
-    <td><img src="images/grid-3268.png"></img></td>
+    <td><b style="font-size:20px">LLM: a superstar on stage.</b><hr/> (hnn... funny, it does make sense.)</td>
+    <td><img width="300" src="images/u5.png"></img></td>
  </tr>
  <tr>
     <td>
-        <b style="font-size:20px">CHALLENGE LLM-vision:A Snow White girl walk in forest. (detect ur LLM-Vision Model IQ; if u didnt get white dress and lot of snow.... plz let me know model name)</b>
+        <b style="font-size:20px">CHALLENGE<hr/> LLM-vision:A Snow White girl walk in forest.</b><hr/> (detect ur LLM-Vision Model IQ; if u didnt get white dress and lot of snow.... plz let me know model name)</b>
              <hr>
-            <li>vision model:  
+            <li>SD model:  
             <a href="https://civitai.com/models/618692/flux?modelVersionId=691639">
                 Flux.1 D
             </a>
             </li>
+            <li>LLM model: 
+            <a href="https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF">
+                llava-llama-3.1-8b
+            </a>
+            </li>
+            <li>LLM model: 
+            <a href="https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix#quantization-information">
+               Eris_PrimeV4-Vision-32k-7B-IQ3_XXS
+            </a>
+            </li>
     </td>
-    <td><img src="images/readme5.png"></img><img src="images/readme55.png"></img></td>
+    <td><img width="300" src="images/u6.png"/></td>
  </tr>
 <tr>
     <td>
-        <b style="font-size:20px">FLUX model; hnn...NSFW show. Im not mean that, but LLM isn't wrong. (Trigger more details; that u never thought about it.)</b>
+        <b style="font-size:20px">FLUX model</b><hr/> hnn...NSFW show. I'm not mean that, but not a wrong answer. <hr/>(Trigger more details; that u never thought about it.)
             <hr>
-            <li>civitai SD-base model: 
+            <li>SD model:  
             <a href="https://civitai.com/models/618692/flux?modelVersionId=691639">
                 Flux.1 D
             </a>
             </li>
-            <li>HuggingFace LLM-text-vision model: 
-            <a href="https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix">
-                Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix
+            <li>LLM model: 
+            <a href="https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF">
+                llava-llama-3.1-8b
             </a>
             </li>
-            <li>extension (send sd to mobile: LINE, Telegram, Discord):</li>
-            <li>
-            <a href="https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime">
-               https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime
+            <li>LLM model: 
+            <a href="https://huggingface.co/Lewdiculous/Eris_PrimeV4-Vision-32k-7B-GGUF-IQ-Imatrix#quantization-information">
+               Eris_PrimeV4-Vision-32k-7B-IQ3_XXS
             </a>
             </li>
     </td>
-    <td><img src="images/nsfw_show.png"></img></td>
+    <td><img width="300" src="images/u7.png"></img></td>
  </tr>
 </table>
 
