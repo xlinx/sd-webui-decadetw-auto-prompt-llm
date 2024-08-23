@@ -1,0 +1,1 @@
+call read_random_line.bat

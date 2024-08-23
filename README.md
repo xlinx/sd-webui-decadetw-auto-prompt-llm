@@ -234,6 +234,13 @@
     </td>
     <td><img width="300" src="images/u7.png"></img></td>
  </tr>
+<tr>
+    <td>
+        <b style="font-size:20px">advanced use | before-after-action </b>
+        <hr/> in fact, u can run any u want script | (storyboard) | random read line from txt send into LLM
+    </td>
+    <td><img width="300" src="images/readme_before_action.png"></img></td>
+ </tr>
 </table>
 
 ## Installtion
