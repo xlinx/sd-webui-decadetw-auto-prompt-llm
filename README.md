@@ -142,6 +142,15 @@
     <tr>
         <td colspan="2"><img src="images/rm_use2.png"></img></td>
      </tr>
+    <tr>
+        <td colspan="2">
+            <b style="font-size:20px">ComfyUI Manager | search keyword: auto</b>
+        </td>
+     </tr>
+    <tr>
+        <td colspan="2"><img src="images/comfyui_manageer_search_keyword_auto.png" ></td>
+     </tr>
+
 </table>
 
 ### Usage
@@ -243,19 +252,48 @@
  </tr>
 </table>
 
+## Usage Tips 
+
+  * tips1:
+    * leave only 1 or fewer keyword(deep inside CLIP encode) for SD-Prompt, others just fitting into LLM
+    * SD-Prompt: 1girl, [xxx,]<--(the keyword u use usually, u got usually image)
+    * LLM-Prompt:  xxx, yyy, zzz, <--(move it to here; trigger more detail that u never though.)
+  * tips2:
+      * leave only 1 or fewer keyword(deep inside CLIP encode) for SD-Prompt, others just fit into LLM
+      * SD-Prompt: 1girl,
+      * LLM-Prompt:  a superstar on stage. <--(say a story)
+  * tips3:
+    * action script - Before
+      * random/series pick prompt txt file random line fit into LLM-Text [[read_random_line.bat](https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/blob/main/before-after-actions/read_random_line.bat)]
+      * random/series pick image path file fit into LLM-Vision
+    * action script - After
+      * u can call what u want command
+      * ex: release LLM VRAM each call: "curl http://localhost:11434/api/generate -d '{"model": "llama2", "keep_alive": 0}'" @Pdonor
+      * ex: bra bra. Interactive anything.
+  * tipsX: Enjoy it, inspire ur idea, and tell everybody how u use this.
+
 ## Installtion
 
 * You need install LM Studio or ollama first.
-    * LM Studio: Start the LLM service on port 1234 .
-    * ollama: Start service on port 11434 .
+    * [LM Studio](https://lmstudio.ai/): Start the LLM service on port 1234. (suggest use this one)
+    * [ollama](https://ollama.com/): Start service on port 11434 .
 * Pick one language model from under list
     * text base(small ~2G)
     * text&vision base(a little big ~8G)
-* Start web-ui and install extensions
-    * here https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
-    * or use default
-      load https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json
-        * search llm
+* Start web-ui or ComfyUI install extensions or node
+    * stable-diffusion-webui | stable-diffusion-webui-forge:  
+      * go Extensions->Available [official] or Install from URL
+        * https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm
+    * ComfyUI: using Manager install node
+      * Manager -> Customer Node Manager -> Search keyword: auto
+      * https://github.com/ltdrdata/ComfyUI-Manager
+      * https://registry.comfy.org/
+      * https://ltdrdata.github.io/
+* Open ur favorite UI
+  * Lets inactive with LLM. go~
+  * trigger more detail by LLM
+
+
 
 ## Suggestion software info list
 
