@@ -6,6 +6,9 @@
 * Auto msg to ur mobile  (LINE | Telegram | Discord)
   * SD-WEB-UI :https://github.com/xlinx/sd-webui-decadetw-auto-messaging-realtime
   * ComfyUI:  https://github.com/xlinx/ComfyUI-decadetw-auto-messaging-realtime
+* CivitAI Info|discuss:
+  * https://civitai.com/articles/6988/extornode-using-llm-trigger-more-detail-that-u-never-thought
+  * https://civitai.com/articles/6989/extornode-sd-image-auto-msg-to-u-mobile-realtime
 <hr/>
 
 # SD-WEB-UI | ComfyUI | decadetw-Auto-Prompt-LLM-Vision
@@ -143,6 +146,9 @@
         <td colspan="2"><img src="images/rm_use2.png"></img></td>
      </tr>
     <tr>
+        <td colspan="2"><img src="images/rm_use3.png"></img></td>
+     </tr>
+    <tr>
         <td colspan="2">
             <b style="font-size:20px">ComfyUI Manager | search keyword: auto</b>
         </td>
@@ -219,7 +225,10 @@
             </a>
             </li>
     </td>
-    <td><img width="300" src="images/u6.png"/></td>
+    <td>
+        <img width="300" src="images/u6.png"/>
+        <img width="300" src="images/u7.png"></img>
+    </td>
  </tr>
 <tr>
     <td>
@@ -241,7 +250,7 @@
             </a>
             </li>
     </td>
-    <td><img width="300" src="images/u7.png"></img></td>
+    <td><img width="300" src="images/u8.png"></img></td>
  </tr>
 <tr>
     <td>
