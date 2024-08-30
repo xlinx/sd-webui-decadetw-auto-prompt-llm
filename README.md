@@ -259,6 +259,13 @@
     </td>
     <td><img width="300" src="images/readme_before_action.png"></img></td>
  </tr>
+<tr>
+    <td>
+        <b style="font-size:20px">Special LLM Loop for ComfyUI</b>
+        <hr/> Connect 1st LLM-Text output to 2nd LLM-Text Input
+    </td>
+    <td><img width="300" src="images/llm-text-loop.png"></img></td>
+ </tr>
 </table>
 
 ## Usage Tips 

@@ -79,7 +79,7 @@ class AutoLLM(scripts.Script):
         if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
             self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
-    def call_llm_eye_open(self,  llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+    def call_llm_eye_open(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                           llm_system_prompt, llm_ur_prompt,
                           # llm_llm_answer,
                           # llm_history,
@@ -96,7 +96,7 @@ class AutoLLM(scripts.Script):
                           # llm_sendto_txt2img, llm_sendto_img2img
                           llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                           llm_post_action_cmd,
-                                     llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision):
+                          llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -173,7 +173,7 @@ class AutoLLM(scripts.Script):
 
         return result, self.llm_history_array
 
-    def call_llm_pythonlib(self,  llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+    def call_llm_pythonlib(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                            llm_system_prompt, llm_ur_prompt,
                            # llm_llm_answer,
                            # llm_history,
@@ -191,7 +191,8 @@ class AutoLLM(scripts.Script):
                            llm_before_action_cmd_feedback_type, llm_before_action_cmd,
                            llm_post_action_cmd_feedback_type,
                            llm_post_action_cmd,
-                                     llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision):
+                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
+                           llm_loop_enabled, llm_loop_ur_prompt,llm_loop_count_slider):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
@@ -199,9 +200,11 @@ class AutoLLM(scripts.Script):
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_ur_prompt = (llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
                             self.llm_history_array[self.llm_history_array.__len__() - 1][0]
-        try:
-            self.check_api_uri(llm_apiurl, llm_apikey)
+        self.check_api_uri(llm_apiurl, llm_apikey)
 
+
+
+        try:
             completion = self.client.chat.completions.create(
                 model=f"{llm_api_model_name}",
                 messages=[
@@ -213,6 +216,20 @@ class AutoLLM(scripts.Script):
                 top_p=llm_top_p_text
 
             )
+            if llm_loop_enabled:
+                for i in range(llm_loop_count_slider):
+                    completion = self.client.chat.completions.create(
+                        model=f"{llm_api_model_name}",
+                        messages=[
+                            {"role": "system", "content": llm_system_prompt},
+                            {"role": "user", "content": completion.choices[0].message.content}
+                        ],
+                        max_tokens=llm_max_token,
+                        temperature=llm_tempture,
+                        top_p=llm_top_p_text
+
+                    )
+
         except OpenAIError as e:
             self.llm_history_array.append([e.message, e.message, e.message, e.message])
             return e.message, self.llm_history_array
@@ -292,25 +309,27 @@ class AutoLLM(scripts.Script):
 
                     with gr.Row():
                         with gr.Column(scale=1):
-                            llm_system_prompt = gr.Textbox(label="1. [LLM-System-Prompt]", lines=20,
+                            llm_system_prompt = gr.Textbox(label="1. [LLM-System-Prompt]", lines=5,
                                                            value=self.llm_sys_text_template,
                                                            placeholder=self.llm_sys_text_template
                                                            )
-                        with gr.Column(scale=4):
-                            llm_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=2,
+                            llm_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=5,
                                                        value="A superstar on stage.",
                                                        placeholder="A superstar on stage.")
+                        with gr.Column(scale=4):
                             llm_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
                                                      label="LLM temperature", elem_id="llm_tempture",
                                                      interactive=True,
                                                      hint='temperature (Deterministic) | (More creative)')
                             with gr.Row():
                                 llm_top_k_text = gr.Slider(
-                                    elem_id="llm_top_k_text", label="LLM Top k ", value=8, minimum=1, maximum=20, step=0.01,
+                                    elem_id="llm_top_k_text", label="LLM Top k ", value=8, minimum=1, maximum=20,
+                                    step=0.01,
                                     interactive=True,
                                     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                                 llm_top_p_text = gr.Slider(
-                                    elem_id="llm_top_p_text", label="LLM Top p ", value=0.9, minimum=0, maximum=1, step=0.01,
+                                    elem_id="llm_top_p_text", label="LLM Top p ", value=0.9, minimum=0, maximum=1,
+                                    step=0.01,
                                     interactive=True,
                                     hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
                             llm_llm_answer = gr.Textbox(inputs=self.process, show_copy_button=True, interactive=True,
@@ -318,7 +337,6 @@ class AutoLLM(scripts.Script):
 
                             with gr.Row():
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
-
                                 llm_sendto_img2img = gr.Button("send to img2img")
 
                             llm_max_token = gr.Slider(5, 5000, value=50, step=5, label="LLM Max length(tokens)")
@@ -340,10 +358,10 @@ class AutoLLM(scripts.Script):
                         value=True)
                     with gr.Row():
                         with gr.Column(scale=1):
-                            llm_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=10,
+                            llm_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=5,
                                                                value=self.llm_sys_vision_template,
                                                                placeholder=self.llm_sys_vision_template)
-                            llm_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=10,
+                            llm_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=7,
                                                            value="What’s in this image?",
                                                            placeholder="What’s in this image?")
                         with gr.Column(scale=4):
@@ -352,11 +370,13 @@ class AutoLLM(scripts.Script):
                                                          label="LLM temperature (Deterministic) | (More creative)")
                             with gr.Row():
                                 llm_top_k_vision = gr.Slider(
-                                    elem_id="llm_top_k_vision", label="LLM Top k ", value=8, minimum=1, maximum=20, step=0.01,
+                                    elem_id="llm_top_k_vision", label="LLM Top k ", value=8, minimum=1, maximum=20,
+                                    step=0.01,
                                     interactive=True,
                                     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                                 llm_top_p_vision = gr.Slider(
-                                    elem_id="llm_top_p_vision", label="LLM Top p ", value=0.9, minimum=0, maximum=1, step=0.01,
+                                    elem_id="llm_top_p_vision", label="LLM Top p ", value=0.9, minimum=0, maximum=1,
+                                    step=0.01,
                                     interactive=True,
                                     hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
                             llm_llm_answer_eye = gr.Textbox(inputs=self.process, show_copy_button=True,
@@ -383,7 +403,19 @@ class AutoLLM(scripts.Script):
                 #     llm_is_asking = gr.Checkbox(label="Enable asking", value=False)
                 # with gr.Tab("Gallery"):
                 #     gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=3, rows=1, object_fit="contain", height="auto")
-
+                with gr.Tab("LLM-text Loop"):
+                    gr.Markdown("* LLM-Text -> LLM-line-1 -> LLM-line-2 -> LLM-line-3 -> SD\n"
+                                "* digging into deep of model\n"
+                                "* model suggest 7B\n"
+                                )
+                    llm_loop_enabled = gr.Checkbox(label="1. Enable LLM-Text-Loop to SD-prompt", value=False)
+                    llm_loop_count_slider=gr.Slider(1, 5, value=1, step=1,
+                              label="2. LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
+                    llm_loop_ur_prompt = gr.Textbox(
+                        label="3. option.[LLM-Loop-Your-Prompt] line by line append to every loop",
+                        lines=3,
+                        value="red\nyellow\nblue",
+                        placeholder="red\nyellow\nblue")
                 with gr.Tab("Setup"):
                     gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
                                 "* API-URI: ollama  => http://localhost:11434/v1 \n"
@@ -478,7 +510,7 @@ class AutoLLM(scripts.Script):
                                  llm_before_action_cmd_feedback_type, llm_before_action_cmd,
                                  llm_post_action_cmd_feedback_type,
                                  llm_post_action_cmd,
-                                     llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision
+                                 llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision
                                  ],
                          outputs=[llm_llm_answer, llm_history])
 
@@ -507,7 +539,8 @@ class AutoLLM(scripts.Script):
                 # llm_sendto_txt2img, llm_sendto_img2img
                 llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                 llm_post_action_cmd,
-                                     llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision
+                llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
+                llm_loop_enabled, llm_loop_ur_prompt,llm_loop_count_slider
                 ]
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
