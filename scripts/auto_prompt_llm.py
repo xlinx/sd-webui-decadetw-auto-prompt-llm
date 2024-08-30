@@ -217,12 +217,14 @@ class AutoLLM(scripts.Script):
 
             )
             if llm_loop_enabled:
+                llm_loop_ur_prompt_array=llm_loop_ur_prompt.split('\n')
+
                 for i in range(llm_loop_count_slider):
                     completion = self.client.chat.completions.create(
                         model=f"{llm_api_model_name}",
                         messages=[
                             {"role": "system", "content": llm_system_prompt},
-                            {"role": "user", "content": completion.choices[0].message.content}
+                            {"role": "user", "content": llm_loop_ur_prompt_array[min(len(llm_loop_ur_prompt_array)-1,i)]+completion.choices[0].message.content}
                         ],
                         max_tokens=llm_max_token,
                         temperature=llm_tempture,
