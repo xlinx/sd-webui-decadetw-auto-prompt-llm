@@ -5,6 +5,8 @@ import os
 import enum
 import pprint
 import subprocess
+from io import BytesIO
+
 import gradio as gr
 from openai import OpenAI, OpenAIError
 
@@ -42,6 +44,10 @@ class EnumCmdReturnType(enum.Enum):
     def values(cls):
         return [e.value for e in cls]
 
+def xprint(obj):
+    for attr in dir(obj):
+        if not attr.startswith("__"):
+            print(attr + "==>", getattr(obj, attr))
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
@@ -103,15 +109,22 @@ class AutoLLM(scripts.Script):
         }
         # https: // platform.openai.com / docs / guides / vision?lang = curl
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
-        if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
-            llm_ur_prompt_image_eye = llm_before_action_cmd_return_value
+        # if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
+        #     llm_ur_prompt_image_eye = llm_before_action_cmd_return_value
         try:
-            image = open(llm_ur_prompt_image_eye, "rb").read()
-            base64_image = base64.b64encode(image).decode("utf-8")
+            # if type(llm_ur_prompt_image_eye) == str:
+            #     process_buffer = open(llm_ur_prompt_image_eye, "rb").read()
+            # else:
+            log.error(
+                f"[][][call_llm_eye_open]PIL Image llm_ur_prompt_image_eye.format: {llm_ur_prompt_image_eye} ")
+            xprint(llm_ur_prompt_image_eye)
+            process_buffer = BytesIO()
+            llm_ur_prompt_image_eye.save(process_buffer, format='PNG')
+            base64_image = base64.b64encode(process_buffer.getvalue()).decode("utf-8")
             # print("[][call_llm_eye_open][]base64_image", base64_image)
 
         except Exception as e:
-            # log.error(f"[][][call_llm_eye_open]IO Error: {e}")
+            log.error(f"[][][call_llm_eye_open]PIL Image Error: {e} ")
             self.llm_history_array.append(["missing input image ?", e, e, e])
             # return "[][call_llm_eye_open]missing input image ?" + e, self.llm_history_array
             return "missing input image ?", self.llm_history_array
@@ -357,7 +370,7 @@ class AutoLLM(scripts.Script):
                                                            value="What’s in this image?",
                                                            placeholder="What’s in this image?")
                         with gr.Column(scale=4):
-                            llm_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type="filepath")
+                            llm_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type='pil')
                             llm_tempture_eye = gr.Slider(-2, 2, value=0.1, step=0.01,
                                                          label="LLM temperature (Deterministic) | (More creative)")
                             with gr.Row():
