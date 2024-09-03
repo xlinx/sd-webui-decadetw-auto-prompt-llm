@@ -115,9 +115,8 @@ class AutoLLM(scripts.Script):
             # if type(llm_ur_prompt_image_eye) == str:
             #     process_buffer = open(llm_ur_prompt_image_eye, "rb").read()
             # else:
-            log.error(
-                f"[][][call_llm_eye_open]PIL Image llm_ur_prompt_image_eye.format: {llm_ur_prompt_image_eye} ")
-            xprint(llm_ur_prompt_image_eye)
+            # log.warning(f"[][][call_llm_eye_open]PIL Image llm_ur_prompt_image_eye.format: {llm_ur_prompt_image_eye} ")
+            # xprint(llm_ur_prompt_image_eye)
             process_buffer = BytesIO()
             llm_ur_prompt_image_eye.save(process_buffer, format='PNG')
             base64_image = base64.b64encode(process_buffer.getvalue()).decode("utf-8")
