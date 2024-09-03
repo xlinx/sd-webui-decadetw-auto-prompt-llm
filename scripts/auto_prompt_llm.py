@@ -11,6 +11,7 @@ import gradio as gr
 from openai import OpenAI, OpenAIError
 
 from modules import scripts
+from modules.hashes import cache
 from modules.processing import StableDiffusionProcessingTxt2Img
 # from modules.script_callbacks import on_ui_tabs
 from modules.shared import opts
@@ -44,10 +45,12 @@ class EnumCmdReturnType(enum.Enum):
     def values(cls):
         return [e.value for e in cls]
 
+
 def xprint(obj):
     for attr in dir(obj):
         if not attr.startswith("__"):
             print(attr + "==>", getattr(obj, attr))
+
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
@@ -506,6 +509,9 @@ class AutoLLM(scripts.Script):
         community_export_btn.click(self.community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
+        community_import_btn.click(self.community_import_from_text,
+                                   inputs=community_text,
+                                   outputs=all_var_val)
         llm_button_eye.click(self.call_llm_eye_open,
                              inputs=all_var_val,
                              outputs=[llm_llm_answer_eye, llm_history_eye])
@@ -528,6 +534,18 @@ class AutoLLM(scripts.Script):
     def community_export_to_text(self, *args, **kwargs):
         dictx = (dict(zip(all_var_key, args)))
         return json.dumps(dictx, indent=4)
+
+    def community_import_from_text(self, *args, **kwargs):
+        try:
+            jo = json.loads(args[0])
+            import_data = []
+            for ele in all_var_key:
+                import_data.append(jo[ele])
+            log.warning("[O][Auto-LLM][Import-OK]")
+            return import_data
+        except OpenAIError as e:
+            log.warning("[X][Auto-LLM][Import-Fail]")
+        
 
     def process(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
