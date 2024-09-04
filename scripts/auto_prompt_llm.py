@@ -56,6 +56,38 @@ def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
 
 
+def read_from_file(filename):
+    with open(filename, "r", encoding="utf8") as file:
+        return json.load(file)
+
+
+def write_to_file(filename, current_ui_settings):
+    with open(filename, "w", encoding="utf8") as file:
+        json.dump(current_ui_settings, file, indent=4, ensure_ascii=False)
+
+
+def community_export_to_text(*args, **kwargs):
+    dictx = (dict(zip(all_var_key, args)))
+    write_to_file('Auto-LLM-settings.json', dictx)
+    return json.dumps(dictx, indent=4)
+
+
+def community_import_from_text(*args, **kwargs):
+    try:
+        if len(str(args[0])) <= 0:
+            jo = read_from_file('Auto-LLM-settings.json')
+        else:
+            jo = json.loads(args[0])
+        import_data = []
+        for ele in all_var_key:
+            import_data.append(jo[ele])
+        log.warning("[O][Auto-LLM][Import-OK]")
+        return import_data
+    except Exception as e:
+        log.warning("[X][Auto-LLM][Import-Fail]")
+
+
+
 class AutoLLM(scripts.Script):
     client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
@@ -101,7 +133,7 @@ class AutoLLM(scripts.Script):
                           llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                           llm_post_action_cmd,
                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider,llm_loop_each_append):
+                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -197,7 +229,7 @@ class AutoLLM(scripts.Script):
                            llm_post_action_cmd_feedback_type,
                            llm_post_action_cmd,
                            llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                           llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider,llm_loop_each_append):
+                           llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
@@ -422,7 +454,9 @@ class AutoLLM(scripts.Script):
                                 "* function discussions:  https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14 \n"
                                 )
                     llm_loop_enabled = gr.Checkbox(label="1. Enable LLM-Text-Loop to SD-prompt", value=False)
-                    llm_loop_each_append = gr.Checkbox(label="2.Append each. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]", value=False)
+                    llm_loop_each_append = gr.Checkbox(
+                        label="2.Append each. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
+                        value=False)
                     llm_loop_count_slider = gr.Slider(1, 5, value=1, step=1,
                                                       label="2. LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
                     llm_loop_ur_prompt = gr.Textbox(
@@ -489,14 +523,14 @@ class AutoLLM(scripts.Script):
                                 "* https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/12\n"
                                 )
                     with gr.Row():
-                        community_export_btn = gr.Button("0. Export Auto-LLM-setting to text")
-                        community_import_btn = gr.Button("0. Import text to Auto-LLM-setting")
+                        community_export_btn = gr.Button("0. Export&Save Auto-LLM-setting to text")
+                        community_import_btn = gr.Button("0. Import From Save or textbox")
 
                     community_text = gr.Textbox(
                         label="1. copy/paste Text-LLM-Setting here",
                         lines=3,
                         value="",
-                        placeholder="SD-model SD-prompt LLM-model LLM-sys-prompt LLM-prompt LLM-temp 0.5 LLM-answer")
+                        placeholder="Export&Save first; if here empty will load from disk")
 
         all_var_val = [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                        llm_system_prompt, llm_ur_prompt,
@@ -510,13 +544,13 @@ class AutoLLM(scripts.Script):
                        llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                        llm_post_action_cmd,
                        llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                       llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider,llm_loop_each_append
+                       llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append
                        ]
 
-        community_export_btn.click(self.community_export_to_text,
+        community_export_btn.click(community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
-        community_import_btn.click(self.community_import_from_text,
+        community_import_btn.click(community_import_from_text,
                                    inputs=community_text,
                                    outputs=all_var_val)
         llm_button_eye.click(self.call_llm_eye_open,
@@ -537,22 +571,6 @@ class AutoLLM(scripts.Script):
         return all_var_val
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
-
-    def community_export_to_text(self, *args, **kwargs):
-        dictx = (dict(zip(all_var_key, args)))
-        return json.dumps(dictx, indent=4)
-
-    def community_import_from_text(self, *args, **kwargs):
-        try:
-            jo = json.loads(args[0])
-            import_data = []
-            for ele in all_var_key:
-                import_data.append(jo[ele])
-            log.warning("[O][Auto-LLM][Import-OK]")
-            return import_data
-        except OpenAIError as e:
-            log.warning("[X][Auto-LLM][Import-Fail]")
-        
 
     def process(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
@@ -589,7 +607,7 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
                'llm_before_action_cmd_feedback_type', 'llm_before_action_cmd', 'llm_post_action_cmd_feedback_type',
                'llm_post_action_cmd',
                'llm_top_k_text', 'llm_top_p_text', 'llm_top_k_vision', 'llm_top_p_vision',
-               'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider','llm_loop_each_append'
+               'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider', 'llm_loop_each_append'
                ]
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")

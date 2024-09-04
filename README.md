@@ -192,7 +192,7 @@
         (okay, its cool.)
     </td>
     <td>
-        <img width="300" src="images/u1.png" alt=""/>
+        <img width="500" src="images/u1.png" alt=""/>
     </td>
  </tr>
 <tr>
@@ -203,20 +203,20 @@
         <hr/>
         (okie, cooool show dress. At least we don't have half zebra half human.)
     </td>
-    <td colspan="1"><img width="300" src="images/u2.png" alt=""></img></td>
+    <td colspan="1"><img width="500" src="images/u2.png" alt=""></img></td>
  </tr>
  <tr>
     <td><b style="font-size:20px">LLM-Text: a superstar on stage. </b>
         <hr/>(okay, its cool.)</td>
-    <td><img width="300" src="images/u3.png"></img></td>
+    <td><img width="500" src="images/u3.png"></img></td>
  </tr>
  <tr>
     <td><b style="font-size:20px">LLM: a superstar on stage.</b><hr/> (Wow... the describe of light is great.)</td>
-    <td><img width="300" src="images/u4.png"></img></td>
+    <td><img width="500" src="images/u4.png"></img></td>
  </tr>
  <tr>
     <td><b style="font-size:20px">LLM: a superstar on stage.</b><hr/> (hnn... funny, it does make sense.)</td>
-    <td><img width="300" src="images/u5.png"></img></td>
+    <td><img width="500" src="images/u5.png"></img></td>
  </tr>
  <tr>
     <td>
@@ -239,8 +239,8 @@
             </li>
     </td>
     <td>
-        <img width="300" src="images/u6.png"/>
-        <img width="300" src="images/u7.png"></img>
+        <img width="500" src="images/u6.png"/>
+        <img width="500" src="images/u7.png"></img>
     </td>
  </tr>
 <tr>
@@ -263,37 +263,37 @@
             </a>
             </li>
     </td>
-    <td><img width="300" src="images/u8.png"></img></td>
+    <td><img width="500" src="images/u8.png"></img></td>
  </tr>
 <tr>
     <td>
         <b style="font-size:20px">advanced use | before-after-action </b>
         <hr/> in fact, u can run any u want script | (storyboard) | random read line from txt send into LLM
     </td>
-    <td><img width="300" src="images/readme_before_action.png"></img></td>
+    <td><img width="500" src="images/readme_before_action.png"></img></td>
  </tr>
 <tr>
     <td>
         <b style="font-size:20px">Special LLM Loop </b>
         <hr/> Connect 1st LLM-Text output to 2nd LLM-Text Input
     </td>
-    <td><img width="300" src="images/llm-text-loop.png"></img>
-        <img width="300" src="images/webui-llm-loop-ui.png"></img>
+    <td><img width="500" src="images/llm-text-loop.png"></img>
+        <img width="500" src="images/webui-llm-loop-ui.png"></img>
     </td>
  </tr>
 <tr>
-    <td>
+    <td style="width: 40%">
         <b style="font-size:20px">Special LLM Loop - keep each feature assign to different obj not mix it on one.</b>
         <hr/> LLM-Text output ask looply : 
         <a href="https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14"> here</a>
     </td>
     <td>
-        <img width="200" src="images/llm-loop-ex-5.png"/>
-        <img width="200" src="images/llm-loop-ex-6.png"/>
-        <img width="200" src="images/llm-loop-ex-1.png"/>
-        <img width="200" src="images/llm-loop-ex-2.png"/>
-        <img width="200" src="images/llm-loop-ex-3.png"/>
-        <img width="200" src="images/llm-loop-ex-4.png"/>
+        <img width="250" src="images/llm-loop-ex-5.png"/>
+        <img width="250" src="images/llm-loop-ex-6.png"/>
+        <img width="250" src="images/llm-loop-ex-1.png"/>
+        <img width="250" src="images/llm-loop-ex-2.png"/>
+        <img width="250" src="images/llm-loop-ex-3.png"/>
+        <img width="250" src="images/llm-loop-ex-4.png"/>
     </td>
  </tr>
 </table>
