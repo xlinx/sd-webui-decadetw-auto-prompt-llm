@@ -101,7 +101,7 @@ class AutoLLM(scripts.Script):
                           llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                           llm_post_action_cmd,
                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider):
+                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider,llm_loop_each_append):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -197,7 +197,7 @@ class AutoLLM(scripts.Script):
                            llm_post_action_cmd_feedback_type,
                            llm_post_action_cmd,
                            llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                           llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider):
+                           llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider,llm_loop_each_append):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
@@ -219,6 +219,7 @@ class AutoLLM(scripts.Script):
                 top_p=llm_top_p_text
 
             )
+            llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
@@ -236,12 +237,15 @@ class AutoLLM(scripts.Script):
                         top_p=llm_top_p_text
 
                     )
+                    llm_answers_array.append(completion.choices[0].message.content)
 
         except OpenAIError as e:
             self.llm_history_array.append([e.message, e.message, e.message, e.message])
             return e.message, self.llm_history_array
-
         result = completion.choices[0].message.content
+        if llm_loop_each_append:
+            result = " | ".join(llm_answers_array)
+
         result = result.replace('\n', ' ')
         result_translate = ""
         if llm_api_translate_enabled:
@@ -414,8 +418,10 @@ class AutoLLM(scripts.Script):
                     gr.Markdown("* LLM-Text -> LLM-line-1 -> LLM-line-2 -> LLM-line-3 -> SD\n"
                                 "* digging into deep of model\n"
                                 "* model suggest 7B\n"
+                                "* 2.Append each. ==> u will get every line llm-answer separately.  \n"
                                 )
                     llm_loop_enabled = gr.Checkbox(label="1. Enable LLM-Text-Loop to SD-prompt", value=False)
+                    llm_loop_each_append = gr.Checkbox(label="2.Append each. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]", value=False)
                     llm_loop_count_slider = gr.Slider(1, 5, value=1, step=1,
                                                       label="2. LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
                     llm_loop_ur_prompt = gr.Textbox(
@@ -503,7 +509,7 @@ class AutoLLM(scripts.Script):
                        llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                        llm_post_action_cmd,
                        llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                       llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider
+                       llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider,llm_loop_each_append
                        ]
 
         community_export_btn.click(self.community_export_to_text,
@@ -582,7 +588,7 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
                'llm_before_action_cmd_feedback_type', 'llm_before_action_cmd', 'llm_post_action_cmd_feedback_type',
                'llm_post_action_cmd',
                'llm_top_k_text', 'llm_top_p_text', 'llm_top_k_vision', 'llm_top_p_vision',
-               'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider'
+               'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider','llm_loop_each_append'
                ]
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")
