@@ -419,6 +419,7 @@ class AutoLLM(scripts.Script):
                                 "* digging into deep of model\n"
                                 "* model suggest 7B\n"
                                 "* 2.Append each. ==> u will get every line llm-answer separately.  \n"
+                                "* function discussions:  https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14 \n"
                                 )
                     llm_loop_enabled = gr.Checkbox(label="1. Enable LLM-Text-Loop to SD-prompt", value=False)
                     llm_loop_each_append = gr.Checkbox(label="2.Append each. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]", value=False)

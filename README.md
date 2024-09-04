@@ -274,10 +274,27 @@
  </tr>
 <tr>
     <td>
-        <b style="font-size:20px">Special LLM Loop for ComfyUI</b>
+        <b style="font-size:20px">Special LLM Loop </b>
         <hr/> Connect 1st LLM-Text output to 2nd LLM-Text Input
     </td>
-    <td><img width="300" src="images/llm-text-loop.png"></img></td>
+    <td><img width="300" src="images/llm-text-loop.png"></img>
+        <img width="300" src="images/webui-llm-loop-ui.png"></img>
+    </td>
+ </tr>
+<tr>
+    <td>
+        <b style="font-size:20px">Special LLM Loop - keep each feature assign to different obj not mix it on one.</b>
+        <hr/> LLM-Text output ask looply : 
+        <a href="https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14"> here</a>
+    </td>
+    <td>
+        <img width="200" src="images/llm-loop-ex-5.png"/>
+        <img width="200" src="images/llm-loop-ex-6.png"/>
+        <img width="200" src="images/llm-loop-ex-1.png"/>
+        <img width="200" src="images/llm-loop-ex-2.png"/>
+        <img width="200" src="images/llm-loop-ex-3.png"/>
+        <img width="200" src="images/llm-loop-ex-4.png"/>
+    </td>
  </tr>
 </table>
 
