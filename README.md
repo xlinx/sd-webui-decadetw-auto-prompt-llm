@@ -392,13 +392,25 @@
 
 ## Using Online Chat-GPT Setup example
 
-OpenAI ChatGPT setup example
+### OpenAI ChatGPT 
 
 - In Auto-LLM Setup tab
   - LLM-URL=https://api.openai.com/v1
 - get ur api key from openAI : https://platform.openai.com/api-keys
   - LLM-API-KEY = xxxxxxxxxxxxxxxxxxxxxxx
   - LLM-Model-Name = gpt-3.5-turbo
+### Google Gemini
+- LLM-URL= https://generativelanguage.googleapis.com/v1
+- get the api key: https://ai.google.dev/gemini-api/docs/api-key?hl=zh-tw
+
+
+### X Grok
+- register here: https://x.ai/geo-block
+- Its not open for my region. i cant test for u guys.
+
+### claude.ai
+
+- seems not for api call: https://claude.ai/upgrade
 
 ### Javascript!
 
