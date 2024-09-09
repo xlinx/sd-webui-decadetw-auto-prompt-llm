@@ -389,6 +389,17 @@
 <img src="https://huggingface.co/FiditeNemini/Llama-3.1-Unhinged-Vision-8B-GGUF/resolve/main/llama-3.1-unhinged-vision.jpeg" width=40%>
 <img src="https://github.com/InternLM/lmdeploy/assets/36994684/0cf8d00f-e86b-40ba-9b54-dc8f1bc6c8d8" width=40%>
 
+
+## Using Online Chat-GPT Setup example
+
+OpenAI ChatGPT setup example
+
+- In Auto-LLM Setup tab
+  - LLM-URL=https://api.openai.com/v1
+- get ur api key from openAI : https://platform.openai.com/api-keys
+  - LLM-API-KEY = xxxxxxxxxxxxxxxxxxxxxxx
+  - LLM-Model-Name = gpt-3.5-turbo
+
 ### Javascript!
 
 security issue, but u can consider as follows.
