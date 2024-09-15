@@ -8,7 +8,9 @@ import subprocess
 from io import BytesIO
 
 import gradio as gr
-from openai import OpenAI, OpenAIError
+import requests
+
+# from openai import OpenAI, OpenAIError
 
 from modules import scripts
 from modules.api.models import value
@@ -85,13 +87,13 @@ def community_import_from_text(*args, **kwargs):
         for ele in all_var_key:
             import_data.append(jo[ele])
         log.warning("[O][Auto-LLM][Import-OK]")
-        return import_data #.append(json.dumps(jo, indent=4))
+        return import_data  #.append(json.dumps(jo, indent=4))
     except Exception as e:
         log.warning("[X][Auto-LLM][Import-Fail]")
 
 
 class AutoLLM(scripts.Script):
-    client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
+    # client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
     llm_history_array_eye = []
     llm_sys_vision_template = (
@@ -121,19 +123,38 @@ class AutoLLM(scripts.Script):
     def show(self, is_img2img):
         return scripts.AlwaysVisible
 
-    def check_api_uri(self, llm_apiurl, llm_apikey):
-        if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
-            self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
+    # def check_api_uri(self, llm_apiurl, llm_apikey):
+    #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
+    #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
+
+    def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl):
+        result_mix = ''
+        headers_x = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {llm_apikey}',
+        }
+        try:#http://localhost:1234/v1/chat/completions
+            print('[Auto-LLM]call_llm_mix')
+            completion = requests.post(llm_apiurl+'/chat/completions', headers=headers_x, json=json_str_x).json()
+            pprint.pprint(completion)
+            result_mix = completion['choices'][0]['message']['content']
+        except Exception as e:
+            e = str(e)
+            self.llm_history_array.append([e, e, e, e])
+            result_mix = "[Auto-LLM][Result][Missing LLM-Text]" + e
+            log.warning("[Auto-LLM][][]Missing LLM Server?")
+        result_mix = result_mix.replace('\n', ' ')
+        return result_mix
 
     def call_llm_eye_open(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                          llm_system_prompt, llm_ur_prompt,
-                          llm_max_token, llm_tempture,
+                          llm_text_system_prompt, llm_text_ur_prompt,
+                          llm_text_max_token, llm_text_tempture,
                           llm_apiurl, llm_apikey, llm_api_model_name,
                           llm_api_translate_system_prompt, llm_api_translate_enabled,
                           llm_is_open_eye,
-                          llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                          llm_tempture_eye,
-                          llm_max_token_eye,
+                          llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_ur_prompt_image_eye,
+                          llm_text_tempture_eye,
+                          llm_text_max_token_eye,
                           llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                           llm_post_action_cmd,
                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
@@ -149,15 +170,15 @@ class AutoLLM(scripts.Script):
         # https: // platform.openai.com / docs / guides / vision?lang = curl
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         # if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
-        #     llm_ur_prompt_image_eye = llm_before_action_cmd_return_value
+        #     llm_text_ur_prompt_image_eye = llm_before_action_cmd_return_value
         try:
-            # if type(llm_ur_prompt_image_eye) == str:
-            #     process_buffer = open(llm_ur_prompt_image_eye, "rb").read()
+            # if type(llm_text_ur_prompt_image_eye) == str:
+            #     process_buffer = open(llm_text_ur_prompt_image_eye, "rb").read()
             # else:
-            # log.warning(f"[][][call_llm_eye_open]PIL Image llm_ur_prompt_image_eye.format: {llm_ur_prompt_image_eye} ")
-            # xprint(llm_ur_prompt_image_eye)
+            # log.warning(f"[][][call_llm_eye_open]PIL Image llm_text_ur_prompt_image_eye.format: {llm_text_ur_prompt_image_eye} ")
+            # xprint(llm_text_ur_prompt_image_eye)
             process_buffer = BytesIO()
-            llm_ur_prompt_image_eye.save(process_buffer, format='PNG')
+            llm_text_ur_prompt_image_eye.save(process_buffer, format='PNG')
             base64_image = base64.b64encode(process_buffer.getvalue()).decode("utf-8")
             # print("[][call_llm_eye_open][]base64_image", base64_image)
 
@@ -167,19 +188,19 @@ class AutoLLM(scripts.Script):
             # return "[][call_llm_eye_open]missing input image ?" + e, self.llm_history_array
             return "missing input image ?", self.llm_history_array
         try:
-            self.check_api_uri(llm_apiurl, llm_apikey)
+            # self.check_api_uri(llm_apiurl, llm_apikey)
 
-            completion = self.client.chat.completions.create(
-                model=f"{llm_api_model_name}",
-                messages=[
+            json_x0 = {
+                'model': f"{llm_api_model_name}",
+                'messages': [
                     {
                         "role": "system",
-                        "content": f"{llm_system_prompt_eye}",
+                        "content": f"{llm_text_system_prompt_eye}",
                     },
                     {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": f"{llm_ur_prompt_eye}"},
+                            {"type": "text", "text": f"{llm_text_ur_prompt_eye}"},
                             {
                                 "type": "image_url",
                                 "image_url": {
@@ -190,28 +211,30 @@ class AutoLLM(scripts.Script):
                     }
                 ],
 
-                max_tokens=llm_max_token_eye,
-                temperature=llm_tempture_eye,
-                top_p=llm_top_p_vision
+                'max_tokens': llm_text_max_token_eye,
+                'temperature': llm_text_tempture_eye,
+                'top_p': llm_top_p_vision
+            }
+            result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl)
 
-            )
-
-        except OpenAIError as e:
-            log.error(f"[][][call_llm_eye_open]Model Error: {e.message}")
-            self.llm_history_array.append([e.message, e.message, e.message, e.message])
-            return e.message, self.llm_history_array
+        except Exception as e:
+            e = str(e)
+            log.error(f"[][][call_llm_eye_open]Model Error: {e}")
+            self.llm_history_array.append([e, e, e, e])
+            return e, self.llm_history_array
 
         # for chunk in completion:
         #     if chunk.choices[0].delta.content:
         #         result = chunk.choices[0].delta.content
         # print(chunk.choices[0].delta.content, end="", flush=True)
-        result = completion.choices[0].message.content
-        result = result.replace('\n', ' ')
+        # result = completion.choices[0].message.content
+        result = result_text.replace('\n', ' ')
         result_translate = ""
         if llm_api_translate_enabled:
-            result_translate = self.call_llm_translate(llm_api_model_name, llm_api_translate_system_prompt, result,
-                                                       llm_max_token_eye)
-        self.llm_history_array.append([result, llm_system_prompt_eye, llm_ur_prompt_eye, result_translate])
+            result_translate = self.call_llm_translate(llm_apiurl, llm_apikey, llm_api_model_name,
+                                                       llm_api_translate_system_prompt, result,
+                                                       llm_text_max_token_eye)
+        self.llm_history_array.append([result, llm_text_system_prompt_eye, llm_text_ur_prompt_eye, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
         print("[][auto-llm][call_llm_eye_open] ", result)
@@ -220,76 +243,91 @@ class AutoLLM(scripts.Script):
 
         return result, self.llm_history_array
 
-    def call_llm_pythonlib(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                           llm_system_prompt, llm_ur_prompt,
-                           llm_max_token, llm_tempture,
-                           llm_apiurl, llm_apikey, llm_api_model_name,
-                           llm_api_translate_system_prompt, llm_api_translate_enabled,
-                           llm_is_open_eye,
-                           llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                           llm_tempture_eye,
-                           llm_max_token_eye,
-                           llm_before_action_cmd_feedback_type, llm_before_action_cmd,
-                           llm_post_action_cmd_feedback_type,
-                           llm_post_action_cmd,
-                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                           llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append):
+    def call_llm_text(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                      llm_text_system_prompt, llm_text_ur_prompt,
+                      llm_text_max_token, llm_text_tempture,
+                      llm_apiurl, llm_apikey, llm_api_model_name,
+                      llm_api_translate_system_prompt, llm_api_translate_enabled,
+                      llm_is_open_eye,
+                      llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_ur_prompt_image_eye,
+                      llm_text_tempture_eye,
+                      llm_text_max_token_eye,
+                      llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                      llm_post_action_cmd_feedback_type,
+                      llm_post_action_cmd,
+                      llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
+                      llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
-            llm_ur_prompt += llm_before_action_cmd_return_value
+            llm_text_ur_prompt += llm_before_action_cmd_return_value
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
-            llm_ur_prompt = (llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
-                            self.llm_history_array[self.llm_history_array.__len__() - 1][0]
-        self.check_api_uri(llm_apiurl, llm_apikey)
-
+            llm_text_ur_prompt = (llm_text_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
+                                 self.llm_history_array[self.llm_history_array.__len__() - 1][0]
+        # self.check_api_uri(llm_apiurl, llm_apikey)
+        result_text = ''
         try:
-            completion = self.client.chat.completions.create(
-                model=f"{llm_api_model_name}",
-                messages=[
-                    {"role": "system", "content": llm_system_prompt},
-                    {"role": "user", "content": llm_ur_prompt}
-                ],
-                max_tokens=llm_max_token,
-                temperature=llm_tempture,
-                top_p=llm_top_p_text
 
-            )
+            json_x1 = {
+                'model': f'{llm_api_model_name}',
+                'messages': [
+                    {'role': 'system', 'content': f'{llm_text_system_prompt}'},
+                    {'role': 'user', 'content': f'{llm_text_ur_prompt}'}
+                ],
+                'max_tokens': f'{llm_text_max_token}',
+                'temperature': f'{llm_text_tempture}',
+                'stream': f'{False}',
+            }
+
+            result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl)
+
+            # completion = self.client.chat.completions.create(
+            #     model=f"{llm_api_model_name}",
+            #     messages=[
+            #         {"role": "system", "content": llm_text_system_prompt},
+            #         {"role": "user", "content": llm_text_ur_prompt}
+            #     ],
+            #     max_tokens=llm_text_max_token,
+            #     temperature=llm_text_tempture,
+            #     top_p=llm_top_p_text
+            #
+            # )
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
                 for i in range(llm_loop_count_slider):
-                    completion = self.client.chat.completions.create(
-                        model=f"{llm_api_model_name}",
-                        messages=[
-                            {"role": "system", "content": llm_system_prompt},
+                    json_x2 = {
+                        'model': f"{llm_api_model_name}",
+                        'messages': [
+                            {"role": "system", "content": llm_text_system_prompt},
                             {"role": "user",
-                             "content": llm_loop_ur_prompt_array[min(len(llm_loop_ur_prompt_array) - 1, i)] +
-                                        completion.choices[0].message.content}
+                             "content": llm_loop_ur_prompt_array[
+                                            min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text}
                         ],
-                        max_tokens=llm_max_token,
-                        temperature=llm_tempture,
-                        top_p=llm_top_p_text
+                        'max_tokens': llm_text_max_token,
+                        'temperature': llm_text_tempture,
+                        'top_p': llm_top_p_text
+                    }
+                    llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl))
 
-                    )
-                    llm_answers_array.append(completion.choices[0].message.content)
-
-        except OpenAIError as e:
-            self.llm_history_array.append([e.message, e.message, e.message, e.message])
-            return e.message, self.llm_history_array
-        result = completion.choices[0].message.content
+        except Exception as e:
+            e = str(e)
+            self.llm_history_array.append([e, e, e, e])
+            return e, self.llm_history_array
+        # result = completion.choices[0].message.content
         if llm_loop_each_append:
             result = " | ".join(llm_answers_array)
 
-        result = result.replace('\n', ' ')
+        result = result_text.replace('\n', ' ')
         result_translate = ""
         if llm_api_translate_enabled:
-            result_translate = self.call_llm_translate(llm_api_model_name, llm_api_translate_system_prompt, result,
-                                                       llm_max_token)
+            result_translate = self.call_llm_translate(llm_apiurl, llm_apikey, llm_api_model_name,
+                                                       llm_api_translate_system_prompt, result,
+                                                       llm_text_max_token)
 
-        self.llm_history_array.append([result, llm_ur_prompt, llm_system_prompt, result_translate])
+        self.llm_history_array.append([result, llm_text_ur_prompt, llm_text_system_prompt, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
         # print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
@@ -312,32 +350,35 @@ class AutoLLM(scripts.Script):
             self.llm_history_array.append(["[X]PostAction-Command failed.", err, llm_post_action_cmd, out])
         return out
 
-    def call_llm_translate(self, llm_api_model_name, llm_api_translate_system_prompt, llm_api_translate_user_prompt,
-                           _llm_max_token):
+    def call_llm_translate(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_api_translate_system_prompt,
+                           llm_api_translate_user_prompt,
+                           _llm_text_max_token):
         try:
 
-            completion2 = self.client.chat.completions.create(
-                model=f"{llm_api_model_name}",
-                messages=[
+            json_x3 = {
+                'model': f"{llm_api_model_name}",
+                'messages': [
                     {"role": "system", "content": llm_api_translate_system_prompt},
                     {"role": "user", "content": llm_api_translate_user_prompt}
                 ],
-                max_tokens=_llm_max_token,
-                temperature=0.2,
-            )
-        except OpenAIError as e:
-            log.error(f"[][][call_llm_pythonlib]Error: {e.message}")
-            return e.message
-        result_translate = completion2.choices[0].message.content
+                'max_tokens': _llm_text_max_token,
+                'temperature': 0.2,
+            }
+        except Exception as e:
+            e = str(e)
+            log.error(f"[][][call_llm_pythonlib]Error: {e}")
+            return e
+        result_translate = self.call_llm_mix(llm_apikey, json_x3, llm_apiurl)
+
         result_translate = result_translate.replace('\n', '').encode("utf-8").decode()
         log.warning(f"[][][call_llm_translate]: {result_translate}")
         return result_translate
 
-    def update_answer(self, message: str):
-        output = {
-            "value": message,
-        }
-        return output
+    # def update_answer(self, message: str):
+    #     output = {
+    #         "value": message,
+    #     }
+    #     return output
 
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
@@ -363,18 +404,18 @@ class AutoLLM(scripts.Script):
 
                     with gr.Row():
                         with gr.Column(scale=1):
-                            llm_system_prompt = gr.Textbox(label="1. [LLM-System-Prompt]", lines=5,
-                                                           value=self.llm_sys_text_template,
-                                                           placeholder=self.llm_sys_text_template
-                                                           )
-                            llm_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=5,
-                                                       value="A superstar on stage.",
-                                                       placeholder="A superstar on stage.")
+                            llm_text_system_prompt = gr.Textbox(label="1. [LLM-System-Prompt]", lines=5,
+                                                                value=self.llm_sys_text_template,
+                                                                placeholder=self.llm_sys_text_template
+                                                                )
+                            llm_text_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=5,
+                                                            value="A superstar on stage.",
+                                                            placeholder="A superstar on stage.")
                         with gr.Column(scale=4):
-                            llm_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
-                                                     label="LLM temperature", elem_id="llm_tempture",
-                                                     interactive=True,
-                                                     hint='temperature (Deterministic) | (More creative)')
+                            llm_text_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
+                                                          label="LLM temperature", elem_id="llm_text_tempture",
+                                                          interactive=True,
+                                                          hint='temperature (Deterministic) | (More creative)')
                             with gr.Row():
                                 llm_top_k_text = gr.Slider(
                                     elem_id="llm_top_k_text", label="LLM Top k ", value=8, minimum=1, maximum=20,
@@ -396,7 +437,7 @@ class AutoLLM(scripts.Script):
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
                                 llm_sendto_img2img = gr.Button("send to img2img")
 
-                            llm_max_token = gr.Slider(5, 5000, value=50, step=5, label="4. LLM Max length(tokens)")
+                            llm_text_max_token = gr.Slider(5, 5000, value=50, step=5, label="4. LLM Max length(tokens)")
                     llm_button = gr.Button("Call LLM above")
                     llm_history = gr.Dataframe(
                         interactive=True,
@@ -415,16 +456,16 @@ class AutoLLM(scripts.Script):
                         value=True)
                     with gr.Row():
                         with gr.Column(scale=1):
-                            llm_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=5,
-                                                               value=self.llm_sys_vision_template,
-                                                               placeholder=self.llm_sys_vision_template)
-                            llm_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=7,
-                                                           value="What’s in this image?",
-                                                           placeholder="What’s in this image?")
+                            llm_text_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=5,
+                                                                    value=self.llm_sys_vision_template,
+                                                                    placeholder=self.llm_sys_vision_template)
+                            llm_text_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=7,
+                                                                value="What’s in this image?",
+                                                                placeholder="What’s in this image?")
                         with gr.Column(scale=4):
-                            llm_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type='pil')
-                            llm_tempture_eye = gr.Slider(-2, 2, value=0.1, step=0.01,
-                                                         label="LLM temperature (Deterministic) | (More creative)")
+                            llm_text_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type='pil')
+                            llm_text_tempture_eye = gr.Slider(-2, 2, value=0.1, step=0.01,
+                                                              label="LLM temperature (Deterministic) | (More creative)")
                             with gr.Row():
                                 llm_top_k_vision = gr.Slider(
                                     elem_id="llm_top_k_vision", label="LLM Top k ", value=8, minimum=1, maximum=20,
@@ -440,8 +481,8 @@ class AutoLLM(scripts.Script):
                                                             interactive=True,
                                                             label="3. [LLM-Answer-eye]", lines=6,
                                                             placeholder="LLM says.")
-                            llm_max_token_eye = gr.Slider(5, 5000, value=50, step=5,
-                                                          label="4. LLM Max length(tokens)")
+                            llm_text_max_token_eye = gr.Slider(5, 5000, value=50, step=5,
+                                                               label="4. LLM Max length(tokens)")
                     llm_button_eye = gr.Button("Call LLM-vision above")
                     llm_history_eye = gr.Dataframe(
                         interactive=True,
@@ -547,14 +588,14 @@ class AutoLLM(scripts.Script):
                         placeholder="Export&Save first; if here empty will load from disk")
 
         all_var_val = [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                       llm_system_prompt, llm_ur_prompt,
-                       llm_max_token, llm_tempture,
+                       llm_text_system_prompt, llm_text_ur_prompt,
+                       llm_text_max_token, llm_text_tempture,
                        llm_apiurl, llm_apikey, llm_api_model_name,
                        llm_api_translate_system_prompt, llm_api_translate_enabled,
                        llm_is_open_eye,
-                       llm_system_prompt_eye, llm_ur_prompt_eye, llm_ur_prompt_image_eye,
-                       llm_tempture_eye,
-                       llm_max_token_eye,
+                       llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_ur_prompt_image_eye,
+                       llm_text_tempture_eye,
+                       llm_text_max_token_eye,
                        llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
                        llm_post_action_cmd,
                        llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
@@ -570,7 +611,7 @@ class AutoLLM(scripts.Script):
         llm_button_eye.click(self.call_llm_eye_open,
                              inputs=all_var_val,
                              outputs=[llm_llm_answer_eye, llm_history_eye])
-        llm_button.click(self.call_llm_pythonlib,
+        llm_button.click(self.call_llm_text,
                          inputs=all_var_val,
                          outputs=[self.llm_llm_answer, llm_history])
 
@@ -601,7 +642,7 @@ class AutoLLM(scripts.Script):
         args_dict = dict(zip(all_var_key, args))
         # if llm_is_enabled:
         if args_dict.get('llm_is_enabled'):
-            r = self.call_llm_pythonlib(*args)
+            r = self.call_llm_text(*args)
             g_result = str(r[0])
 
             # g_result += g_result+"\n\n"+translate_r
@@ -620,14 +661,14 @@ class AutoLLM(scripts.Script):
 
 args_dict = None
 all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use',
-               'llm_system_prompt', 'llm_ur_prompt',
-               'llm_max_token', 'llm_tempture',
+               'llm_text_system_prompt', 'llm_text_ur_prompt',
+               'llm_text_max_token', 'llm_text_tempture',
                'llm_apiurl', 'llm_apikey', 'llm_api_model_name',
                'llm_api_translate_system_prompt', 'llm_api_translate_enabled',
                'llm_is_open_eye',
-               'llm_system_prompt_eye', 'llm_ur_prompt_eye', 'llm_ur_prompt_image_eye',
-               'llm_tempture_eye',
-               'llm_max_token_eye',
+               'llm_text_system_prompt_eye', 'llm_text_ur_prompt_eye', 'llm_text_ur_prompt_image_eye',
+               'llm_text_tempture_eye',
+               'llm_text_max_token_eye',
                'llm_before_action_cmd_feedback_type', 'llm_before_action_cmd', 'llm_post_action_cmd_feedback_type',
                'llm_post_action_cmd',
                'llm_top_k_text', 'llm_top_p_text', 'llm_top_k_vision', 'llm_top_p_vision',

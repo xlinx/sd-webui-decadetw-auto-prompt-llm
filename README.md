@@ -390,7 +390,7 @@
 <img src="https://github.com/InternLM/lmdeploy/assets/36994684/0cf8d00f-e86b-40ba-9b54-dc8f1bc6c8d8" width=40%>
 
 
-## Using Online Chat-GPT Setup example
+## Using Online LLM Service Setup example
 
 ### OpenAI ChatGPT 
 
@@ -399,21 +399,22 @@
 - get ur api key from openAI : https://platform.openai.com/api-keys
   - LLM-API-KEY = xxxxxxxxxxxxxxxxxxxxxxx
   - LLM-Model-Name = gpt-3.5-turbo
+  
 ### Google Gemini
 - LLM-URL= https://generativelanguage.googleapis.com/v1
 - get the api key: https://ai.google.dev/gemini-api/docs/api-key?hl=zh-tw
-
 
 ### X Grok
 - register here: https://x.ai/geo-block
 - Its not open for my region. i cant test for u guys.
 
 ### claude.ai
-
 - seems not for api call: https://claude.ai/upgrade
 
-### Javascript!
+### Hugging face space
+- https://huggingface.co/spaces
 
+### Javascript!
 security issue, but u can consider as follows.
 
 * https://github.com/pmcculler/sd-dynamic-javascript
