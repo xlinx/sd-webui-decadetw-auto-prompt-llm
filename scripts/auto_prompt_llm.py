@@ -386,36 +386,37 @@ class AutoLLM(scripts.Script):
                                                                 value=self.llm_sys_text_template,
                                                                 placeholder=self.llm_sys_text_template
                                                                 )
-                            llm_text_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=5,
+                            llm_text_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=8,
                                                             value="A superstar on stage.",
                                                             placeholder="A superstar on stage.")
                         with gr.Column(scale=4):
                             llm_text_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
-                                                          label="LLM temperature", elem_id="llm_text_tempture",
+                                                          label="3.1 LLM temperature", elem_id="llm_text_tempture",
                                                           interactive=True,
                                                           hint='temperature (Deterministic) | (More creative)')
                             with gr.Row():
                                 llm_top_k_text = gr.Slider(
-                                    elem_id="llm_top_k_text", label="LLM Top k ", value=8, minimum=1, maximum=20,
+                                    elem_id="llm_top_k_text", label="3.2 LLM Top k ", value=8, minimum=1, maximum=20,
                                     step=0.01,
                                     interactive=True,
                                     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                                 llm_top_p_text = gr.Slider(
-                                    elem_id="llm_top_p_text", label="LLM Top p ", value=0.9, minimum=0, maximum=1,
+                                    elem_id="llm_top_p_text", label="3.3 LLM Top p ", value=0.9, minimum=0, maximum=1,
                                     step=0.01,
                                     interactive=True,
                                     hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
 
+                            llm_text_max_token = gr.Slider(5, 5000, value=150, step=5, label="3.4 LLM Max length(tokens)")
                             self.llm_llm_answer = gr.Textbox(
                                 # inputs=[llm_ans_state['llm-text-ans']],
                                 show_copy_button=True, interactive=True,
-                                label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
+                                label="4. [LLM-Answer]", lines=6, placeholder="LLM says.")
 
                             with gr.Row():
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
                                 llm_sendto_img2img = gr.Button("send to img2img")
 
-                            llm_text_max_token = gr.Slider(5, 5000, value=50, step=5, label="4. LLM Max length(tokens)")
+
                     llm_button = gr.Button("Call LLM above")
                     llm_history = gr.Dataframe(
                         interactive=True,
@@ -434,33 +435,36 @@ class AutoLLM(scripts.Script):
                         value=True)
                     with gr.Row():
                         with gr.Column(scale=1):
-                            llm_text_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=5,
+                            llm_text_system_prompt_eye = gr.Textbox(label=" 1.[LLM-System-Prompt-eye]", lines=13,
                                                                     value=self.llm_sys_vision_template,
                                                                     placeholder=self.llm_sys_vision_template)
-                            llm_text_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt]", lines=7,
+                            llm_text_ur_prompt_eye = gr.Textbox(label=" 2.[Your-prompt-eye]", lines=13,
                                                                 value="What’s in this image?",
                                                                 placeholder="What’s in this image?")
                         with gr.Column(scale=4):
                             llm_text_ur_prompt_image_eye = gr.Image(label="2. [Your-Image]", lines=1, type='pil')
                             llm_text_tempture_eye = gr.Slider(-2, 2, value=0.1, step=0.01,
-                                                              label="LLM temperature (Deterministic) | (More creative)")
+                                                              label="3.1 LLM temperature (Deterministic) | (More creative)")
                             with gr.Row():
                                 llm_top_k_vision = gr.Slider(
-                                    elem_id="llm_top_k_vision", label="LLM Top k ", value=8, minimum=1, maximum=20,
+                                    elem_id="llm_top_k_vision", label="3.2 LLM Top k ", value=8, minimum=1, maximum=20,
                                     step=0.01,
                                     interactive=True,
                                     hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
                                 llm_top_p_vision = gr.Slider(
-                                    elem_id="llm_top_p_vision", label="LLM Top p ", value=0.9, minimum=0, maximum=1,
+                                    elem_id="llm_top_p_vision", label="3.3 LLM Top p ", value=0.9, minimum=0, maximum=1,
                                     step=0.01,
                                     interactive=True,
                                     hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
+                            llm_text_max_token_eye = gr.Slider(5, 5000, value=150, step=5,
+                                                               label="3.4 LLM Max length(tokens)")
                             llm_llm_answer_eye = gr.Textbox(inputs=self.process, show_copy_button=True,
                                                             interactive=True,
-                                                            label="3. [LLM-Answer-eye]", lines=6,
+                                                            label="4. [LLM-Answer-eye]", lines=6,
                                                             placeholder="LLM says.")
-                            llm_text_max_token_eye = gr.Slider(5, 5000, value=50, step=5,
-                                                               label="4. LLM Max length(tokens)")
+                            with gr.Row():
+                                llm_sendto_txt2img_vision = gr.Button("send to txt2img")
+                                llm_sendto_img2img_vision = gr.Button("send to img2img")
                     llm_button_eye = gr.Button("Call LLM-vision above")
                     llm_history_eye = gr.Dataframe(
                         interactive=True,
@@ -556,7 +560,7 @@ class AutoLLM(scripts.Script):
                                 "* https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/12\n"
                                 )
                     with gr.Row():
-                        community_export_btn = gr.Button("0. Export to Disk|Text")
+                        community_export_btn = gr.Button("0. Export/Save to Disk|Text")
                         community_import_btn = gr.Button("0. Import from Disk|Text")
 
                     community_text = gr.Textbox(
