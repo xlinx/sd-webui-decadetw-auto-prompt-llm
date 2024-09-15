@@ -11,6 +11,7 @@ import gradio as gr
 from openai import OpenAI, OpenAIError
 
 from modules import scripts
+from modules.api.models import value
 from modules.hashes import cache
 from modules.processing import StableDiffusionProcessingTxt2Img
 # from modules.script_callbacks import on_ui_tabs
@@ -75,17 +76,18 @@ def community_export_to_text(*args, **kwargs):
 def community_import_from_text(*args, **kwargs):
     try:
         if len(str(args[0])) <= 0:
+            log.warning("[?][Auto-LLM][lOADING]Auto-LLM-settings.json")
             jo = read_from_file('Auto-LLM-settings.json')
+            log.warning("[o][Auto-LLM][lOADED]Auto-LLM-settings.json")
         else:
             jo = json.loads(args[0])
         import_data = []
         for ele in all_var_key:
             import_data.append(jo[ele])
         log.warning("[O][Auto-LLM][Import-OK]")
-        return import_data
+        return import_data #.append(json.dumps(jo, indent=4))
     except Exception as e:
         log.warning("[X][Auto-LLM][Import-Fail]")
-
 
 
 class AutoLLM(scripts.Script):
@@ -108,6 +110,8 @@ class AutoLLM(scripts.Script):
                                   "\n- Avoid inverted sentences.")
 
     def __init__(self) -> None:
+        self.llm_llm_answer = None
+        self.llm_ans_state = None
         self.YOU_LLM = "A superstar on stage."
         super().__init__()
 
@@ -234,6 +238,7 @@ class AutoLLM(scripts.Script):
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
             llm_ur_prompt += llm_before_action_cmd_return_value
+
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_ur_prompt = (llm_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
                             self.llm_history_array[self.llm_history_array.__len__() - 1][0]
@@ -326,8 +331,13 @@ class AutoLLM(scripts.Script):
         result_translate = completion2.choices[0].message.content
         result_translate = result_translate.replace('\n', '').encode("utf-8").decode()
         log.warning(f"[][][call_llm_translate]: {result_translate}")
-
         return result_translate
+
+    def update_answer(self, message: str):
+        output = {
+            "value": message,
+        }
+        return output
 
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
@@ -336,6 +346,7 @@ class AutoLLM(scripts.Script):
             ["The Moon's orbit around Earth has"],
             ["The smooth Borealis basin in the Northern Hemisphere covers 40%"],
         ]
+        default_llm_ans_json = {"llm-text-ans": "", "llm-vision-ans": ""}
 
         with gr.Blocks():
             # gr.Markdown("Blocks")
@@ -375,8 +386,11 @@ class AutoLLM(scripts.Script):
                                     step=0.01,
                                     interactive=True,
                                     hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
-                            llm_llm_answer = gr.Textbox(inputs=self.process, show_copy_button=True, interactive=True,
-                                                        label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
+
+                            self.llm_llm_answer = gr.Textbox(
+                                # inputs=[llm_ans_state['llm-text-ans']],
+                                show_copy_button=True, interactive=True,
+                                label="3. [LLM-Answer]", lines=6, placeholder="LLM says.")
 
                             with gr.Row():
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
@@ -455,7 +469,7 @@ class AutoLLM(scripts.Script):
                                 )
                     llm_loop_enabled = gr.Checkbox(label="1. Enable LLM-Text-Loop to SD-prompt", value=False)
                     llm_loop_each_append = gr.Checkbox(
-                        label="2.Append each. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
+                        label="2.Append each LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
                         value=False)
                     llm_loop_count_slider = gr.Slider(1, 5, value=1, step=1,
                                                       label="2. LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
@@ -517,14 +531,14 @@ class AutoLLM(scripts.Script):
                         value=False)
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
-                with gr.Tab("Export/Import Community"):
+                with gr.Tab("Export/Import"):
                     gr.Markdown("* Share and see how people how to use LLM in SD.\n"
                                 "* Community Share Link: \n"
                                 "* https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/12\n"
                                 )
                     with gr.Row():
-                        community_export_btn = gr.Button("0. Export&Save Auto-LLM-setting to text")
-                        community_import_btn = gr.Button("0. Import From Save or textbox")
+                        community_export_btn = gr.Button("0. Export to Disk|Text")
+                        community_import_btn = gr.Button("0. Import from Disk|Text")
 
                     community_text = gr.Textbox(
                         label="1. copy/paste Text-LLM-Setting here",
@@ -558,19 +572,29 @@ class AutoLLM(scripts.Script):
                              outputs=[llm_llm_answer_eye, llm_history_eye])
         llm_button.click(self.call_llm_pythonlib,
                          inputs=all_var_val,
-                         outputs=[llm_llm_answer, llm_history])
+                         outputs=[self.llm_llm_answer, llm_history])
 
         llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}",
-                                 inputs=[llm_llm_answer])
+                                 inputs=[self.llm_llm_answer])
         llm_sendto_img2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('img2img', prompt)}",
-                                 inputs=[llm_llm_answer])
+                                 inputs=[self.llm_llm_answer])
 
-        for e in [llm_llm_answer, llm_history, llm_llm_answer_eye, llm_history_eye]:
+        for e in [self.llm_llm_answer, llm_history, llm_llm_answer_eye, llm_history_eye]:
             e.do_not_save_to_config = True
 
         return all_var_val
 
     # def process(self, p: StableDiffusionProcessingTxt2Img,*args):
+    def postprocess(self, p: StableDiffusionProcessingTxt2Img, *args):
+        log.warning(f"_____[AUTO_LLM][postprocess][] ")
+        # self.llm_ans_state.value = 'v1'
+        # self.llm_ans_state.update({'value': 'v11'})
+        # self.llm_ans_state.update(value='v111')
+        # gr.update(self.llm_ans_state, value='v1111')
+        #
+        # self.llm_llm_answer.value = 'v2'
+        # self.llm_llm_answer.update(value='v22')
+        # gr.update(self.llm_llm_answer, value='v222')
 
     def process(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
@@ -607,7 +631,8 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
                'llm_before_action_cmd_feedback_type', 'llm_before_action_cmd', 'llm_post_action_cmd_feedback_type',
                'llm_post_action_cmd',
                'llm_top_k_text', 'llm_top_p_text', 'llm_top_k_vision', 'llm_top_p_vision',
-               'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider', 'llm_loop_each_append'
+               'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider', 'llm_loop_each_append',
+
                ]
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")
