@@ -223,11 +223,7 @@ class AutoLLM(scripts.Script):
             self.llm_history_array.append([e, e, e, e])
             return e, self.llm_history_array
 
-        # for chunk in completion:
-        #     if chunk.choices[0].delta.content:
-        #         result = chunk.choices[0].delta.content
-        # print(chunk.choices[0].delta.content, end="", flush=True)
-        # result = completion.choices[0].message.content
+
         result = result_text.replace('\n', ' ')
         result_translate = ""
         if llm_api_translate_enabled:
@@ -281,18 +277,6 @@ class AutoLLM(scripts.Script):
             }
 
             result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl)
-
-            # completion = self.client.chat.completions.create(
-            #     model=f"{llm_api_model_name}",
-            #     messages=[
-            #         {"role": "system", "content": llm_text_system_prompt},
-            #         {"role": "user", "content": llm_text_ur_prompt}
-            #     ],
-            #     max_tokens=llm_text_max_token,
-            #     temperature=llm_text_tempture,
-            #     top_p=llm_top_p_text
-            #
-            # )
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
@@ -373,12 +357,6 @@ class AutoLLM(scripts.Script):
         result_translate = result_translate.replace('\n', '').encode("utf-8").decode()
         log.warning(f"[][][call_llm_translate]: {result_translate}")
         return result_translate
-
-    # def update_answer(self, message: str):
-    #     output = {
-    #         "value": message,
-    #     }
-    #     return output
 
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
