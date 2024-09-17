@@ -7,7 +7,7 @@ import pprint
 import random
 import subprocess
 from io import BytesIO
-
+import re
 import gradio as gr
 import requests
 from modules import scripts
@@ -52,6 +52,10 @@ def xprint(obj):
         if not attr.startswith("__"):
             print(attr + "==>", getattr(obj, attr))
 
+
+def striphtml(data):
+    p = re.compile(r'<.*?>')
+    return p.sub('', data)
 
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
@@ -132,20 +136,25 @@ class AutoLLM(scripts.Script):
         result = []
         completion = requests.get(auto_prompt_getter_list_url, headers=headers).json()
 
-        try:
-            for ele in completion['items']:
-                log.error(f"[][][auto_prompt_getter]Missing basic parameter: https://civitai.com/images/{ele['id']} ")
-                x1 = ele['url'] or ""
-                x2 = 'https://civitai.com/images/' + str(ele['id']) or ""
-                x3 = ele['meta'].get('prompt', 'not include')  #['prompt'] or ""
-                x4 = ele['meta'].get(auto_prompt_getter_target_tag, 'not include')
-                result.append(x1)
-                self.webpage_walker_array.insert(0, [x3, x4,x1, x2])
-                if len(self.webpage_walker_array) > 50:
-                    self.webpage_walker_array = self.webpage_walker_array[:-1]
-        except Exception as e:
-            e = str(e)
-            log.error(f"[][][auto_prompt_getter]Exception: {e} ")
+        # try:
+        self.webpage_walker_array=[]
+        for ele in completion['items']:
+            log.error(f"[][][auto_prompt_getter]Missing basic parameter: https://civitai.com/images/{ele['id']} ")
+            x1 = ele['url'] or ""
+            x2 = 'https://civitai.com/images/' + str(ele['id']) or ""
+            # x3 = getattr(ele['meta']['prompt'], 'not include')
+            # x4 = getattr(ele['meta'][auto_prompt_getter_target_tag], 'not include')
+            ele2= ele.get('meta') or {}
+            x3 = ele2.get('prompt') or 'not include'
+            x4 = ele2.get(auto_prompt_getter_target_tag) or 'not include'
+            x4 = striphtml(x4)
+            result.append(x1)
+            self.webpage_walker_array.insert(0, [x3, x4,x1, x2])
+            if len(self.webpage_walker_array) > 50:
+                self.webpage_walker_array = self.webpage_walker_array[:-1]
+    # except Exception as e:
+    #     e = str(e)
+    #     log.error(f"[][][auto_prompt_getter]Exception: {e} ")
 
         # print("[][auto-llm][webpage_walker_array] ", result)
         return self.webpage_walker_array
@@ -282,7 +291,7 @@ class AutoLLM(scripts.Script):
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_text_ur_prompt = (llm_text_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
-                                 self.llm_history_array[self.llm_history_array.__len__() - 1][0]
+                                 self.llm_history_array[self.llm_history_array.__len__() - 1][1]
         # self.check_api_uri(llm_apiurl, llm_apikey)
         result_text = ''
         fromCivitai_len = len(self.webpage_walker_array)
@@ -291,7 +300,7 @@ class AutoLLM(scripts.Script):
             temp=''
             while keep_pick:
                 temp=self.webpage_walker_array[random.randrange(0,fromCivitai_len)][1]
-                if temp is not 'not include':
+                if temp != 'not include':
                     keep_pick = False
             llm_text_ur_prompt += temp
             # llm_text_ur_prompt += self.webpage_walker_array[0][2]
@@ -597,7 +606,8 @@ class AutoLLM(scripts.Script):
                                                               value=False)
                     auto_prompt_getter_LLM_vision = gr.Checkbox(label="Random Send(2.customer_var) to LLM-vision👀",
                                                                 value=False)
-
+                    auto_prompt_getter_remove_lora_tag = gr.Checkbox(label="Remove Lora tag in prompt",
+                                                                value=True)
                     auto_prompt_getter_list_url = gr.Textbox(
                         label="1. query URL (https://civitai.com/api/v1/images?p1=xxx&p2=yyy&p3=zzz)",
                         lines=1,
@@ -610,7 +620,7 @@ class AutoLLM(scripts.Script):
                         value="""prompt""",
                         placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
                         info="")
-                    auto_prompt_getter_go_button = gr.Button("get list")
+                    auto_prompt_getter_go_button = gr.Button("click get list first ")
 
                     auto_prompt_getter_history = gr.Dataframe(
                         interactive=True,
