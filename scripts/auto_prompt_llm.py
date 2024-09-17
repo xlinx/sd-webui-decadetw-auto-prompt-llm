@@ -130,18 +130,18 @@ class AutoLLM(scripts.Script):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
-    def auto_prompt_getter(self, auto_prompt_getter_list_url, auto_prompt_getter_target_tag):
+    def CMG_getter(self, CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag):
         #https://github.com/civitai/civitai/wiki/REST-API-Reference/dff336bf9450cb11e80fb5a42327221ce3f09b45#get-apiv1images
         headers = {'user-agent': 'Mozilla/5.0'}
         result = []
-        completion = requests.get(auto_prompt_getter_list_url, headers=headers).json()
+        completion = requests.get(CivitaiMetaGrabber_url, headers=headers).json()
         self.webpage_walker_array.clear()
         for index, ele in enumerate(completion['items']):
             x1 = ele['url'] or ""
             x2 = 'https://civitai.com/images/' + str(ele['id']) or ""
             ele2 = ele.get('meta') or {}
             x3 = ele2.get('prompt') or 'not include'
-            x4 = ele2.get(auto_prompt_getter_target_tag) or 'not include'
+            x4 = ele2.get(CivitaiMetaGrabber_target_tag) or 'not include'
             x4 = striphtml(x4)
             result.append(x1)
             self.webpage_walker_array.append( [x3, x4,x1, x2])
@@ -291,7 +291,7 @@ class AutoLLM(scripts.Script):
         if CivitaiMetaGrabber_to_llm_text_ur_prompt and fromCivitai_len > 0:
             keep_pick=True
             while keep_pick:
-                tempRandomPick=self.webpage_walker_array[random.randrange(0,fromCivitai_len)][1]
+                tempRandomPick=self.webpage_walker_array[random.randrange(0,fromCivitai_len,1)][1]
                 if tempRandomPick != 'not include':
                     keep_pick = False
             llm_text_ur_prompt += tempRandomPick
@@ -348,8 +348,7 @@ class AutoLLM(scripts.Script):
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
 
-        if CivitaiMetaGrabber_to_prompt:
-            result += tempRandomPick
+
         # print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
         self.do_subprocess_action(llm_post_action_cmd)
         return result, self.llm_history_array
@@ -590,7 +589,7 @@ class AutoLLM(scripts.Script):
                         value=False)
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
-                with gr.Tab("Civitai Meta grabber"):
+                with gr.Tab("Civitai Meta Grabber"):
                     gr.Markdown("* Pick one model from civitai model page copy model ID in URL. ex:662112\n"
                                 "* Auto Find all images meta(prompt...) under this model \n"
                                 "** API manual = https://civitai.com/api/v1/images\n"
@@ -603,21 +602,21 @@ class AutoLLM(scripts.Script):
                                                               value=False)
                     auto_prompt_getter_remove_lora_tag = gr.Checkbox(label="Remove Lora tag in prompt",
                                                                 value=True)
-                    auto_prompt_getter_list_url = gr.Textbox(
-                        label="1. query URL (https://civitai.com/api/v1/images?p1=xxx&p2=yyy&p3=zzz)",
+                    CivitaiMetaGrabber_url = gr.Textbox(
+                        label="1. query URL (https://civitai.com/api/v1/images?limit=100&modelId=662112)",
                         lines=1,
                         value="https://civitai.com/api/v1/images?modelId=662112",
                         placeholder="https://civitai.com/api/v1/images?modelId=662112",
                         info="")
-                    auto_prompt_getter_target_tag = gr.Textbox(
-                        label="2. customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
+                    CivitaiMetaGrabber_target_tag = gr.Textbox(
+                        label="2.customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
                         lines=1,
-                        value="""prompt""",
+                        value="prompt",
                         placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
                         info="")
-                    auto_prompt_getter_go_button = gr.Button("click get list first ")
+                    CivitaiMetaGrabber_go_button = gr.Button("click get list first ")
 
-                    auto_prompt_getter_history = gr.Dataframe(
+                    CivitaiMetaGrabber_history = gr.Dataframe(
                         interactive=True,
                         wrap=True,
                         label="History/StoryBoard",
@@ -656,9 +655,9 @@ class AutoLLM(scripts.Script):
                        llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
                        CivitaiMetaGrabber_to_llm_text_ur_prompt,CivitaiMetaGrabber_to_prompt
                        ]
-        auto_prompt_getter_go_button.click(self.auto_prompt_getter,
-                                           inputs=[auto_prompt_getter_list_url, auto_prompt_getter_target_tag],
-                                           outputs=[auto_prompt_getter_history])
+        CivitaiMetaGrabber_go_button.click(self.CMG_getter,
+                                           inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag],
+                                           outputs=[CivitaiMetaGrabber_history])
         community_export_btn.click(community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
