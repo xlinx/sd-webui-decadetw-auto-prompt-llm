@@ -4,14 +4,12 @@ import logging
 import os
 import enum
 import pprint
+import random
 import subprocess
 from io import BytesIO
 
 import gradio as gr
 import requests
-
-# from openai import OpenAI, OpenAIError
-
 from modules import scripts
 from modules.api.models import value
 from modules.hashes import cache
@@ -96,6 +94,7 @@ class AutoLLM(scripts.Script):
     # client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
     llm_history_array_eye = []
+    webpage_walker_array = []
     llm_sys_vision_template = (
         "You are an AI prompt word engineer. Use the provided image to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
 
@@ -127,15 +126,39 @@ class AutoLLM(scripts.Script):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
+    def auto_prompt_getter(self, auto_prompt_getter_list_url, auto_prompt_getter_target_tag):
+        #https://github.com/civitai/civitai/wiki/REST-API-Reference/dff336bf9450cb11e80fb5a42327221ce3f09b45#get-apiv1images
+        headers = {'user-agent': 'Mozilla/5.0'}
+        result = []
+        completion = requests.get(auto_prompt_getter_list_url, headers=headers).json()
+
+        try:
+            for ele in completion['items']:
+                log.error(f"[][][auto_prompt_getter]Missing basic parameter: https://civitai.com/images/{ele['id']} ")
+                x1 = ele['url'] or ""
+                x2 = 'https://civitai.com/images/' + str(ele['id']) or ""
+                x3 = ele['meta'].get('prompt', 'not include')  #['prompt'] or ""
+                x4 = ele['meta'].get(auto_prompt_getter_target_tag, 'not include')
+                result.append(x1)
+                self.webpage_walker_array.insert(0, [x3, x4,x1, x2])
+                if len(self.webpage_walker_array) > 50:
+                    self.webpage_walker_array = self.webpage_walker_array[:-1]
+        except Exception as e:
+            e = str(e)
+            log.error(f"[][][auto_prompt_getter]Exception: {e} ")
+
+        # print("[][auto-llm][webpage_walker_array] ", result)
+        return self.webpage_walker_array
+
     def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl):
         result_mix = ''
         headers_x = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {llm_apikey}',
         }
-        try:#http://localhost:1234/v1/chat/completions
+        try:  #http://localhost:1234/v1/chat/completions
             print('[Auto-LLM]call_llm_mix')
-            completion = requests.post(llm_apiurl+'/chat/completions', headers=headers_x, json=json_str_x).json()
+            completion = requests.post(llm_apiurl + '/chat/completions', headers=headers_x, json=json_str_x).json()
             pprint.pprint(completion)
             result_mix = completion['choices'][0]['message']['content']
         except Exception as e:
@@ -223,7 +246,6 @@ class AutoLLM(scripts.Script):
             self.llm_history_array.append([e, e, e, e])
             return e, self.llm_history_array
 
-
         result = result_text.replace('\n', ' ')
         result_translate = ""
         if llm_api_translate_enabled:
@@ -263,6 +285,16 @@ class AutoLLM(scripts.Script):
                                  self.llm_history_array[self.llm_history_array.__len__() - 1][0]
         # self.check_api_uri(llm_apiurl, llm_apikey)
         result_text = ''
+        fromCivitai_len = len(self.webpage_walker_array)
+        if fromCivitai_len > 0:
+            keep_pick=True
+            temp=''
+            while keep_pick:
+                temp=self.webpage_walker_array[random.randrange(0,fromCivitai_len)][1]
+                if temp is not 'not include':
+                    keep_pick = False
+            llm_text_ur_prompt += temp
+            # llm_text_ur_prompt += self.webpage_walker_array[0][2]
         try:
 
             json_x1 = {
@@ -406,7 +438,8 @@ class AutoLLM(scripts.Script):
                                     interactive=True,
                                     hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
 
-                            llm_text_max_token = gr.Slider(5, 5000, value=150, step=5, label="3.4 LLM Max length(tokens)")
+                            llm_text_max_token = gr.Slider(5, 5000, value=150, step=5,
+                                                           label="3.4 LLM Max length(tokens)")
                             self.llm_llm_answer = gr.Textbox(
                                 # inputs=[llm_ans_state['llm-text-ans']],
                                 show_copy_button=True, interactive=True,
@@ -415,7 +448,6 @@ class AutoLLM(scripts.Script):
                             with gr.Row():
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
                                 llm_sendto_img2img = gr.Button("send to img2img")
-
 
                     llm_button = gr.Button("Call LLM above")
                     llm_history = gr.Dataframe(
@@ -554,6 +586,41 @@ class AutoLLM(scripts.Script):
                         value=False)
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
+                with gr.Tab("Civitai Meta grabber"):
+                    gr.Markdown("* Find the image meta(prompt...) by URL thrn send to LLM ex:prompt\n"
+                                "* Get the Civitai images prompt to LLM\n"
+                                "* https://civitai.com/api/v1/images?query=realistic\n"
+                                "* UI = https://civitai.com/search/images?query=realistic\n"
+                                "* https://civitai.com/images?tags=5133\n"
+                                )
+                    auto_prompt_getter_LLM_text = gr.Checkbox(label="Random Send(2.customer_var) to LLM-text👀",
+                                                              value=False)
+                    auto_prompt_getter_LLM_vision = gr.Checkbox(label="Random Send(2.customer_var) to LLM-vision👀",
+                                                                value=False)
+
+                    auto_prompt_getter_list_url = gr.Textbox(
+                        label="1. query URL (https://civitai.com/api/v1/images?p1=xxx&p2=yyy&p3=zzz)",
+                        lines=1,
+                        value="https://civitai.com/api/v1/images?query=realistic",
+                        placeholder="https://civitai.com/api/v1/images?query=realistic",
+                        info="")
+                    auto_prompt_getter_target_tag = gr.Textbox(
+                        label="2. customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
+                        lines=1,
+                        value="""prompt""",
+                        placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
+                        info="")
+                    auto_prompt_getter_go_button = gr.Button("get list")
+
+                    auto_prompt_getter_history = gr.Dataframe(
+                        interactive=True,
+                        wrap=True,
+                        label="History/StoryBoard",
+                        headers=["prompt", "customer_var","image_url", "post_url"],
+                        datatype=["str", "str", "str", "str"],
+                        row_count=3,
+                        col_count=(4, "fixed"),
+                    )
                 with gr.Tab("Export/Import"):
                     gr.Markdown("* Share and see how people how to use LLM in SD.\n"
                                 "* Community Share Link: \n"
@@ -583,7 +650,9 @@ class AutoLLM(scripts.Script):
                        llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
                        llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append
                        ]
-
+        auto_prompt_getter_go_button.click(self.auto_prompt_getter,
+                                           inputs=[auto_prompt_getter_list_url, auto_prompt_getter_target_tag],
+                                           outputs=[auto_prompt_getter_history])
         community_export_btn.click(community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
