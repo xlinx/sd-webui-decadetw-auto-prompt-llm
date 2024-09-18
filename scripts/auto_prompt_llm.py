@@ -57,6 +57,7 @@ def striphtml(data):
     p = re.compile(r'<.*?>')
     return p.sub('', data)
 
+
 def _get_effective_prompt(prompts: list[str], prompt: str) -> str:
     return prompts[0] if prompts else prompt
 
@@ -144,7 +145,7 @@ class AutoLLM(scripts.Script):
             x4 = ele2.get(CivitaiMetaGrabber_target_tag) or 'not include'
             x4 = striphtml(x4)
             result.append(x1)
-            self.webpage_walker_array.append( [x3, x4,x1, x2])
+            self.webpage_walker_array.append([x3, x4, x1, x2])
             log.warning(f"[{index}][][auto_prompt_getter]URL: {x2} IMG: {x1}")
         return self.webpage_walker_array
 
@@ -273,7 +274,7 @@ class AutoLLM(scripts.Script):
                       llm_post_action_cmd,
                       llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
                       llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
-                       CivitaiMetaGrabber_to_llm_text_ur_prompt,CivitaiMetaGrabber_to_prompt
+                      CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
                       ):
 
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
@@ -286,15 +287,8 @@ class AutoLLM(scripts.Script):
         # self.check_api_uri(llm_apiurl, llm_apikey)
         result_text = ''
 
-        tempRandomPick=''
-        fromCivitai_len = len(self.webpage_walker_array)
-        if CivitaiMetaGrabber_to_llm_text_ur_prompt and fromCivitai_len > 0:
-            keep_pick=True
-            while keep_pick:
-                tempRandomPick=self.webpage_walker_array[random.randrange(0,fromCivitai_len,1)][1]
-                if tempRandomPick != 'not include':
-                    keep_pick = False
-            llm_text_ur_prompt += tempRandomPick
+        if CivitaiMetaGrabber_to_llm_text_ur_prompt:
+            llm_text_ur_prompt += self.getRandomPrompt()
             # llm_text_ur_prompt += self.webpage_walker_array[0][2]
         try:
 
@@ -347,7 +341,6 @@ class AutoLLM(scripts.Script):
         self.llm_history_array.append([result, llm_text_ur_prompt, llm_text_system_prompt, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
-
 
         # print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
         self.do_subprocess_action(llm_post_action_cmd)
@@ -590,23 +583,26 @@ class AutoLLM(scripts.Script):
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
                 with gr.Tab("Civitai Meta Grabber"):
-                    gr.Markdown("* Pick one model from civitai model page copy model ID in URL. ex:662112\n"
+                    gr.Markdown("* Pick one model from civitai model page copy model ID in URL. \n"
+                                "* u can choice a model for BUILDING with ur 1girl. ex:85691\n"
+                                "* then u should get 1girl with indoor-design in very detail\n"
                                 "* Auto Find all images meta(prompt...) under this model \n"
                                 "** API manual = https://civitai.com/api/v1/images\n"
-                                "** API URL = https://civitai.com/api/v1/images?limit=50&sort=Most%20Reactions&modelId=662112\n"
+                                "** API URL = https://civitai.com/api/v1/images?limit=50&sort=Most%20Reactions&modelId=85691\n"
 
                                 )
-                    CivitaiMetaGrabber_to_llm_text_ur_prompt = gr.Checkbox(label="Random Pick(2.customer_var) to LLM-text-ur-prompt",
-                                                              value=False)
-                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(label="Random Pick(2.customer_var) to Prompt",
-                                                              value=False)
+                    CivitaiMetaGrabber_to_llm_text_ur_prompt = gr.Checkbox(
+                        label="Random Pick (2.customer_var) to LLM-text-ur-prompt",
+                        value=False)
+                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(label="Random Pick (2.customer_var) to Prompt (just append prompt without ask LLM)",
+                                                               value=False)
                     auto_prompt_getter_remove_lora_tag = gr.Checkbox(label="Remove Lora tag in prompt",
-                                                                value=True)
+                                                                     value=True)
                     CivitaiMetaGrabber_url = gr.Textbox(
-                        label="1. query URL (https://civitai.com/api/v1/images?limit=100&modelId=662112)",
+                        label="1. query URL (https://civitai.com/api/v1/images?limit=100&modelId=85691)",
                         lines=1,
-                        value="https://civitai.com/api/v1/images?modelId=662112",
-                        placeholder="https://civitai.com/api/v1/images?modelId=662112",
+                        value="https://civitai.com/api/v1/images?modelId=85691",
+                        placeholder="https://civitai.com/api/v1/images?modelId=85691",
                         info="")
                     CivitaiMetaGrabber_target_tag = gr.Textbox(
                         label="2.customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
@@ -620,7 +616,7 @@ class AutoLLM(scripts.Script):
                         interactive=True,
                         wrap=True,
                         label="History/StoryBoard",
-                        headers=["prompt", "customer_var","image_url", "post_url"],
+                        headers=["prompt", "customer_var", "image_url", "post_url"],
                         datatype=["str", "str", "str", "str"],
                         row_count=3,
                         col_count=(4, "fixed"),
@@ -653,7 +649,7 @@ class AutoLLM(scripts.Script):
                        llm_post_action_cmd,
                        llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
                        llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
-                       CivitaiMetaGrabber_to_llm_text_ur_prompt,CivitaiMetaGrabber_to_prompt
+                       CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
                        ]
         CivitaiMetaGrabber_go_button.click(self.CMG_getter,
                                            inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag],
@@ -693,6 +689,20 @@ class AutoLLM(scripts.Script):
         # self.llm_llm_answer.update(value='v22')
         # gr.update(self.llm_llm_answer, value='v222')
 
+    def getRandomPrompt(self):
+        lenx=len(self.webpage_walker_array)
+        if lenx<1:
+            log.warning(f"_____[AUTO_LLM][getRandomPrompt][]Len<1. u need click grabber button first")
+            return ''
+        g_result = self.webpage_walker_array[random.randrange(0, lenx, 1)][1]
+        count = 0
+        while count < 10 and len(g_result) < 20:
+            g_result = self.webpage_walker_array[random.randrange(0, lenx, 1)][1]
+            count += 1
+        log.warning(f"_____[AUTO_LLM][getRandomPrompt][]CivitaiMetaGrabber={g_result}")
+
+        return g_result
+
     def process(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
         args_dict = dict(zip(all_var_key, args))
@@ -705,6 +715,10 @@ class AutoLLM(scripts.Script):
             for i in range(len(p.all_prompts)):
                 p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result
 
+        if args_dict.get('CivitaiMetaGrabber_to_prompt'):
+            g_result = self.getRandomPrompt()
+            for i in range(len(p.all_prompts)):
+                p.all_prompts[i] = p.all_prompts[i] + (",\n" if (p.all_prompts[0].__len__() > 0) else "\n") + g_result
         # if llm_is_open_eye:
         if args_dict.get('llm_is_open_eye'):
             r2 = self.call_llm_eye_open(*args)
@@ -729,7 +743,7 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
                'llm_post_action_cmd',
                'llm_top_k_text', 'llm_top_p_text', 'llm_top_k_vision', 'llm_top_p_vision',
                'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider', 'llm_loop_each_append',
-                'CivitaiMetaGrabber_to_llm_text_ur_prompt', 'CivitaiMetaGrabber_to_prompt'
+               'CivitaiMetaGrabber_to_llm_text_ur_prompt', 'CivitaiMetaGrabber_to_prompt'
                ]
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")
