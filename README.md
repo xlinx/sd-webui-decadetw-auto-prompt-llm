@@ -296,6 +296,23 @@
         <img width="250" src="images/llm-loop-ex-4.png"/>
     </td>
  </tr>
+<tr>
+    <td style="width: 40%">
+        <b style="font-size:20px">[new tool 20240915] Civitai Prompt Grabber</b>
+        <hr/> 
+<ul>
+<li>quick prompt from civitai. u can pick some prompt from another area model(ex indoor design or building model) with ur 1girl, ex: 1girl(up figure)) + in-door design model-prompt. then u will get full detail in background(bottom figure) : <a href="https://civitai.com/models/85691">  https://civitai.com/models/85691</a></li>
+<li>this is good present in FLUX model. trigger more detail in background. Make the photo getting more realistic feeling</li>
+<li>option1. just quick append prompt from other model from civitai or</li>
+<li>option2. of course u can send it into LLM too.</li>
+</ul>
+</td>
+    <td>
+        <img width="350" src="images/ui_grabber.png"/>
+        <img width="350" src="images/grabber3.png"/>
+        
+    </td>
+ </tr>
 </table>
 
 ## Usage Tips 
