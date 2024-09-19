@@ -310,7 +310,6 @@
     <td>
         <img width="350" src="images/ui_grabber.png"/>
         <img width="350" src="images/grabber3.png"/>
-        
     </td>
  </tr>
 </table>

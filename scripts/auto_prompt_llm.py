@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import enum
-import pprint
+# import pprint
 import random
 import subprocess
 from io import BytesIO
@@ -155,16 +155,22 @@ class AutoLLM(scripts.Script):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {llm_apikey}',
         }
-        try:  #http://localhost:1234/v1/chat/completions
+        try:
+            #lm-studio   http://localhost:1234/v1/chat/completions
+            #ollama     http://localhost:11434/v1/chat/completions
             print('[Auto-LLM]call_llm_mix')
-            completion = requests.post(llm_apiurl + '/chat/completions', headers=headers_x, json=json_str_x).json()
-            pprint.pprint(completion)
-            result_mix = completion['choices'][0]['message']['content']
+            if llm_apiurl.endswith('/'):
+                llm_apiurl = llm_apiurl[:-1]
+            completion = requests.post(llm_apiurl + '/chat/completions', headers=headers_x, json=json_str_x)
+            log.warning("[Auto-LLM][][]Server Ans=> " + completion.text)
+
+            completion_json = completion.json()
+            result_mix = completion_json['choices'][0]['message']['content']
         except Exception as e:
             e = str(e)
             self.llm_history_array.append([e, e, e, e])
             result_mix = "[Auto-LLM][Result][Missing LLM-Text]" + e
-            log.warning("[Auto-LLM][][]Missing LLM Server?")
+            log.warning("[Auto-LLM][][]Missing LLM Server?" + e)
         result_mix = result_mix.replace('\n', ' ')
         return result_mix
 
@@ -235,7 +241,8 @@ class AutoLLM(scripts.Script):
 
                 'max_tokens': llm_text_max_token_eye,
                 'temperature': llm_text_tempture_eye,
-                'top_p': llm_top_p_vision
+                'top_p': llm_top_p_vision,
+                'stream': False,
             }
             result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl)
 
@@ -298,9 +305,10 @@ class AutoLLM(scripts.Script):
                     {'role': 'system', 'content': f'{llm_text_system_prompt}'},
                     {'role': 'user', 'content': f'{llm_text_ur_prompt}'}
                 ],
-                'max_tokens': f'{llm_text_max_token}',
-                'temperature': f'{llm_text_tempture}',
-                'stream': f'{False}',
+                'max_tokens': llm_text_max_token,
+                'temperature': llm_text_tempture,
+                'top_p': llm_top_p_text,
+                'stream': False,
             }
 
             result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl)
@@ -319,7 +327,8 @@ class AutoLLM(scripts.Script):
                         ],
                         'max_tokens': llm_text_max_token,
                         'temperature': llm_text_tempture,
-                        'top_p': llm_top_p_text
+                        'top_p': llm_top_p_text,
+                        'stream': False,
                     }
                     llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl))
 
@@ -539,8 +548,8 @@ class AutoLLM(scripts.Script):
                         label="1.[LLM-URL] | LMStudio=>http://localhost:1234/v1 | ollama=> http://localhost:11434/v1",
                         lines=1,
                         value="http://localhost:1234/v1")
-                    llm_apikey = gr.Textbox(label="2.[LLM-API-Key]", lines=1, value="lm-studio")
-                    llm_api_model_name = gr.Textbox(label="3.[LLM-Model-Name]", lines=1,
+                    llm_apikey = gr.Textbox(label="2.[LLM-API-Key] lm-studio | ollama", lines=1, value="lm-studio")
+                    llm_api_model_name = gr.Textbox(label="3.[LLM-Model-Name] lm-studio not need to set; ollama need. ex:llama3.1", lines=1, value="llama3.1",
                                                     placeholder="llama3.1, llama2, gemma2")
 
                     with gr.Row():
