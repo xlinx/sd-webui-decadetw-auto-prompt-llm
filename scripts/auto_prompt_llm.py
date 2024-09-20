@@ -131,12 +131,20 @@ class AutoLLM(scripts.Script):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
-    def CMG_getter(self, CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag):
+    def CMG_getter(self,  CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag):
         #https://github.com/civitai/civitai/wiki/REST-API-Reference/dff336bf9450cb11e80fb5a42327221ce3f09b45#get-apiv1images
+        regex = r"^(?:urn:)?(?:air:)?(?:([a-zA-Z0-9_\-\/]+):)?(?:([a-zA-Z0-9_\-\/]+):)?([a-zA-Z0-9_\-\/]+):([a-zA-Z0-9_\-\/]+)(?:@([a-zA-Z0-9_\-]+))?(?:\.([a-zA-Z0-9_\-]+))?$"
         headers = {'user-agent': 'Mozilla/5.0'}
         result = []
+        if str(CivitaiMetaGrabber_url).startswith("urn"):
+            matches = re.match(regex, CivitaiMetaGrabber_url, re.MULTILINE)
+            CivitaiMetaGrabber_url=f"https://civitai.com/api/v1/images?modelId={matches.group(4)}&modelVersionId={matches.group(5)}"
+        log.warning(f"[###][Auto-LLM][CivitaiMetaGrabber] URL: {CivitaiMetaGrabber_url}")
+        # https: // civitai.com / api / v1 / images?limit = 10 & modelId = 85691
         completion = requests.get(CivitaiMetaGrabber_url, headers=headers).json()
         self.webpage_walker_array.clear()
+
+        gallery_arr=[]
         for index, ele in enumerate(completion['items']):
             x1 = ele['url'] or ""
             x2 = 'https://civitai.com/images/' + str(ele['id']) or ""
@@ -146,8 +154,11 @@ class AutoLLM(scripts.Script):
             x4 = striphtml(x4)
             result.append(x1)
             self.webpage_walker_array.append([x3, x4, x1, x2])
+            gallery_arr.append((x1,x3))
+
             log.warning(f"[{index}][][auto_prompt_getter]URL: {x2} IMG: {x1}")
-        return self.webpage_walker_array
+        return self.webpage_walker_array,gallery_arr
+
 
     def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl):
         result_mix = ''
@@ -592,27 +603,32 @@ class AutoLLM(scripts.Script):
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
                 with gr.Tab("Civitai Meta Grabber"):
-                    gr.Markdown("* Pick one model from civitai model page copy model ID in URL. \n"
-                                "* u can choice a model for BUILDING with ur 1girl. ex:85691\n"
-                                "* then u should get 1girl with indoor-design in very detail\n"
-                                "* Auto Find all images meta(prompt...) under this model \n"
-                                "** API manual = https://civitai.com/api/v1/images\n"
-                                "** API URL = https://civitai.com/api/v1/images?limit=50&sort=Most%20Reactions&modelId=85691\n"
-
+                    gr.Markdown("- Quick walk through all image style prompt of model that u never download\n"
+                                "   - second-model(no need download just ref prompt) for generate with ur(main-model) 1girl. \n"
+                                "   - then u should get 1girl with indoor-design and describe background in-detail quickly\n"
+                                "   - auto Find all images meta(prompt...) under this model \n"
+                                "- API manual = https://civitai.com/api/v1/images\n"
+                                "   - API URL example: https://civitai.com/api/v1/images?limit=50&modelId=85691\n"
+                                "   - if model have multi version, ex: https://civitai.com/api/v1/images?limit=100&modelId=43331&modelVersionId=176425 \n"
+                                "- [NEW] Civitai AIR ‐ Uniform Resource Names for AI\n"
+                                "   - manual: https://github.com/civitai/civitai/wiki/AIR-%E2%80%90-Uniform-Resource-Names-for-AI\n"
+                                "   - ***How find AIR. look every model detail bottom of side menu.(click copy)\n"
+                                "   - ***Civitai AIR look like this=> urn:air:sd1:checkpoint:civitai:85691@93152\n"
                                 )
                     CivitaiMetaGrabber_to_llm_text_ur_prompt = gr.Checkbox(
-                        label="Random Pick (2.customer_var) to LLM-text-ur-prompt",
+                        label="Random Pick (2.customer_var) to LLM-text-ur-prompt (need enable LLM-text)",
                         value=False)
-                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(label="Random Pick (2.customer_var) to Prompt (just append prompt without ask LLM)",
+                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(label="Random Pick (2.customer_var) to Prompt (No need enable LLM-text just append prompt without ask LLM)",
                                                                value=False)
-                    auto_prompt_getter_remove_lora_tag = gr.Checkbox(label="Remove Lora tag in prompt",
-                                                                     value=True)
+                    auto_prompt_getter_remove_lora_tag = gr.Checkbox(label="Remove Lora tag in prompt (any char inside <***>)", value=True)
+
                     CivitaiMetaGrabber_url = gr.Textbox(
-                        label="1. query URL (https://civitai.com/api/v1/images?limit=100&modelId=85691)",
+                        label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?limit=100&modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 )",
                         lines=1,
-                        value="https://civitai.com/api/v1/images?modelId=85691",
+                        value="https://civitai.com/api/v1/images?limit=10&modelId=85691",
                         placeholder="https://civitai.com/api/v1/images?modelId=85691",
                         info="")
+
                     CivitaiMetaGrabber_target_tag = gr.Textbox(
                         label="2.customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
                         lines=1,
@@ -620,11 +636,11 @@ class AutoLLM(scripts.Script):
                         placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
                         info="")
                     CivitaiMetaGrabber_go_button = gr.Button("click get list first ")
-
+                    CivitaiMetaGrabber_gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery" , columns=3, rows=1, object_fit="contain")
                     CivitaiMetaGrabber_history = gr.Dataframe(
                         interactive=True,
                         wrap=True,
-                        label="History/StoryBoard",
+                        label="List all Meta in this model",
                         headers=["prompt", "customer_var", "image_url", "post_url"],
                         datatype=["str", "str", "str", "str"],
                         row_count=3,
@@ -662,7 +678,7 @@ class AutoLLM(scripts.Script):
                        ]
         CivitaiMetaGrabber_go_button.click(self.CMG_getter,
                                            inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag],
-                                           outputs=[CivitaiMetaGrabber_history])
+                                           outputs=[CivitaiMetaGrabber_history,CivitaiMetaGrabber_gallery])
         community_export_btn.click(community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
