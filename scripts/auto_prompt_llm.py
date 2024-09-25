@@ -131,20 +131,36 @@ class AutoLLM(scripts.Script):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
-    def CMG_getter(self,  CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag):
+    def CMG_getter(self, CivitaiMetaGrabber_url:str, CivitaiMetaGrabber_target_tag, CivitaiMetaGrabber_page,
+                   CivitaiMetaGrabber_limit,
+                   CivitaiMetaGrabber_model_id, CivitaiMetaGrabber_model_version_id):
         #https://github.com/civitai/civitai/wiki/REST-API-Reference/dff336bf9450cb11e80fb5a42327221ce3f09b45#get-apiv1images
         regex = r"^(?:urn:)?(?:air:)?(?:([a-zA-Z0-9_\-\/]+):)?(?:([a-zA-Z0-9_\-\/]+):)?([a-zA-Z0-9_\-\/]+):([a-zA-Z0-9_\-\/]+)(?:@([a-zA-Z0-9_\-]+))?(?:\.([a-zA-Z0-9_\-]+))?$"
         headers = {'user-agent': 'Mozilla/5.0'}
         result = []
         if str(CivitaiMetaGrabber_url).startswith("urn"):
             matches = re.match(regex, CivitaiMetaGrabber_url, re.MULTILINE)
-            CivitaiMetaGrabber_url=f"https://civitai.com/api/v1/images?modelId={matches.group(4)}&modelVersionId={matches.group(5)}"
-        log.warning(f"[###][Auto-LLM][CivitaiMetaGrabber] URL: {CivitaiMetaGrabber_url}")
+            CivitaiMetaGrabber_url = f"https://civitai.com/api/v1/images?modelId={matches.group(4)}&modelVersionId={matches.group(5)}"
+
+        if CivitaiMetaGrabber_model_id > 0:
+            CivitaiMetaGrabber_url = f"https://civitai.com/api/v1/images?modelId={CivitaiMetaGrabber_model_id}"
+        if '&modelVersionId=' not in str(CivitaiMetaGrabber_url):
+            if CivitaiMetaGrabber_model_version_id > 0:
+                CivitaiMetaGrabber_url += f"&modelVersionId={CivitaiMetaGrabber_model_version_id}"
+
+        if '&sort=' not in str(CivitaiMetaGrabber_url):
+            CivitaiMetaGrabber_url += '&sort=Most Comments'
+        if '&limit=' not in str(CivitaiMetaGrabber_url):
+            CivitaiMetaGrabber_url += f'&limit={CivitaiMetaGrabber_limit}'
+        if '&page=' not in str(CivitaiMetaGrabber_url):
+            CivitaiMetaGrabber_url += f'&page={CivitaiMetaGrabber_page}'
+
+        log.warning(f"[###][Auto-LLM][CivitaiMetaGrabber] Grabber_URL: {CivitaiMetaGrabber_url}")
         # https: // civitai.com / api / v1 / images?limit = 10 & modelId = 85691
         completion = requests.get(CivitaiMetaGrabber_url, headers=headers).json()
         self.webpage_walker_array.clear()
 
-        gallery_arr=[]
+        gallery_arr = []
         for index, ele in enumerate(completion['items']):
             x1 = ele['url'] or ""
             x2 = 'https://civitai.com/images/' + str(ele['id']) or ""
@@ -154,11 +170,20 @@ class AutoLLM(scripts.Script):
             x4 = striphtml(x4)
             result.append(x1)
             self.webpage_walker_array.append([x3, x4, x1, x2])
-            gallery_arr.append((x1,x3))
+            gallery_arr.append((x1, x3))
 
             log.warning(f"[{index}][][auto_prompt_getter]URL: {x2} IMG: {x1}")
-        return self.webpage_walker_array,gallery_arr
+        model_idx=0
+        model_version_idx=0
+        try:
+            model_idx=re.search(r"modelId=(\d+)", CivitaiMetaGrabber_url,re.IGNORECASE|re.MULTILINE).group(1)
+            log.warning(f"[][][model_idx]{model_idx}")
+            model_version_idx = re.search(r"modelVersionId=(\d+)", CivitaiMetaGrabber_url,re.IGNORECASE|re.MULTILINE).group(1)
+            log.warning(f"[][][model_version_idx]{model_version_idx}")
+        except AttributeError:
+            log.warning(f"[][][AttributeError]model_idx={model_idx} model_version_idx={model_version_idx}",)
 
+        return self.webpage_walker_array, gallery_arr,CivitaiMetaGrabber_url, int(model_idx), int(model_version_idx)
 
     def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl):
         result_mix = ''
@@ -441,18 +466,21 @@ class AutoLLM(scripts.Script):
                             llm_text_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
                                                           label="3.1 LLM temperature", elem_id="llm_text_tempture",
                                                           interactive=True,
-                                                          hint='temperature (Deterministic) | (More creative)')
+                                                          #hint='temperature (Deterministic) | (More creative)'
+                                                          )
                             with gr.Row():
                                 llm_top_k_text = gr.Slider(
                                     elem_id="llm_top_k_text", label="3.2 LLM Top k ", value=8, minimum=1, maximum=20,
                                     step=0.01,
                                     interactive=True,
-                                    hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
+                                    #hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.'
+                                )
                                 llm_top_p_text = gr.Slider(
                                     elem_id="llm_top_p_text", label="3.3 LLM Top p ", value=0.9, minimum=0, maximum=1,
                                     step=0.01,
                                     interactive=True,
-                                    hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
+                                    #hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.'
+                                )
 
                             llm_text_max_token = gr.Slider(5, 5000, value=150, step=5,
                                                            label="3.4 LLM Max length(tokens)")
@@ -498,12 +526,14 @@ class AutoLLM(scripts.Script):
                                     elem_id="llm_top_k_vision", label="3.2 LLM Top k ", value=8, minimum=1, maximum=20,
                                     step=0.01,
                                     interactive=True,
-                                    hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.')
+                                    #hint='Strategy is to sample from a shortlist of the top K tokens. This approach allows the other high-scoring tokens a chance of being picked.'
+                                )
                                 llm_top_p_vision = gr.Slider(
                                     elem_id="llm_top_p_vision", label="3.3 LLM Top p ", value=0.9, minimum=0, maximum=1,
                                     step=0.01,
                                     interactive=True,
-                                    hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.')
+                                    #hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.'
+                                )
                             llm_text_max_token_eye = gr.Slider(5, 5000, value=150, step=5,
                                                                label="3.4 LLM Max length(tokens)")
                             llm_llm_answer_eye = gr.Textbox(inputs=self.process, show_copy_button=True,
@@ -560,8 +590,10 @@ class AutoLLM(scripts.Script):
                         lines=1,
                         value="http://localhost:1234/v1")
                     llm_apikey = gr.Textbox(label="2.[LLM-API-Key] lm-studio | ollama", lines=1, value="lm-studio")
-                    llm_api_model_name = gr.Textbox(label="3.[LLM-Model-Name] lm-studio not need to set; ollama need. ex:llama3.1", lines=1, value="llama3.1",
-                                                    placeholder="llama3.1, llama2, gemma2")
+                    llm_api_model_name = gr.Textbox(
+                        label="3.[LLM-Model-Name] lm-studio not need to set; ollama need. ex:llama3.1", lines=1,
+                        value="llama3.1",
+                        placeholder="llama3.1, llama2, gemma2")
 
                     with gr.Row():
                         with gr.Column(scale=2):
@@ -608,7 +640,7 @@ class AutoLLM(scripts.Script):
                                 "   - then u should get 1girl with indoor-design and describe background in-detail quickly\n"
                                 "   - auto Find all images meta(prompt...) under this model \n"
                                 "- API manual = https://civitai.com/api/v1/images\n"
-                                "   - API URL example: https://civitai.com/api/v1/images?limit=50&modelId=85691\n"
+                                "   - API URL example: https://civitai.com/api/v1/images?modelId=85691\n"
                                 "   - if model have multi version, ex: https://civitai.com/api/v1/images?limit=100&modelId=43331&modelVersionId=176425 \n"
                                 "- [NEW] Civitai AIR ‐ Uniform Resource Names for AI\n"
                                 "   - manual: https://github.com/civitai/civitai/wiki/AIR-%E2%80%90-Uniform-Resource-Names-for-AI\n"
@@ -618,25 +650,43 @@ class AutoLLM(scripts.Script):
                     CivitaiMetaGrabber_to_llm_text_ur_prompt = gr.Checkbox(
                         label="Random Pick (2.customer_var) to LLM-text-ur-prompt (need enable LLM-text)",
                         value=False)
-                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(label="Random Pick (2.customer_var) to Prompt (No need enable LLM-text just append prompt without ask LLM)",
-                                                               value=False)
-                    auto_prompt_getter_remove_lora_tag = gr.Checkbox(label="Remove Lora tag in prompt (any char inside <***>)", value=True)
+                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(
+                        label="Random Pick (2.customer_var) to Prompt (No need enable LLM-text just append prompt without ask LLM)",
+                        value=False)
+                    auto_prompt_getter_remove_lora_tag = gr.Checkbox(
+                        label="Remove Lora tag in prompt (any char inside <***>)", value=True)
 
                     CivitaiMetaGrabber_url = gr.Textbox(
-                        label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?limit=100&modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 )",
+                        label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 )",
                         lines=1,
-                        value="https://civitai.com/api/v1/images?limit=10&modelId=85691",
+                        value="https://civitai.com/api/v1/images?modelId=85691",
                         placeholder="https://civitai.com/api/v1/images?modelId=85691",
                         info="")
-
+                    with gr.Row():
+                        CivitaiMetaGrabber_model_id = gr.Slider(0, 999999, value=0, step=1,
+                                                                label="1.1 Civitai Model ID(0 use above URL setting)",
+                                                                interactive=True)
+                        CivitaiMetaGrabber_model_version_id = gr.Slider(0, 999999, value=0, step=1,
+                                                                        label="1.2 Civitai Model Version ID(0 use above URL setting)",
+                                                                        interactive=True)
                     CivitaiMetaGrabber_target_tag = gr.Textbox(
-                        label="2.customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
+                        label="2.1 customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
                         lines=1,
                         value="prompt",
                         placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
                         info="")
-                    CivitaiMetaGrabber_go_button = gr.Button("click get list first ")
-                    CivitaiMetaGrabber_gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery" , columns=3, rows=1, object_fit="contain")
+                    with gr.Row():
+                        CivitaiMetaGrabber_limit = gr.Slider(1, 100, value=10, step=1,
+                                                             label="2.3 How many result per page", interactive=True)
+                        CivitaiMetaGrabber_page = gr.Slider(1, 100, value=1, step=1,
+                                                            label="2.2 Model Image Gallery Page NO.", interactive=True)
+                    # CivitaiMetaGrabber_model_id = gr.Slider(1, 100, value=1, step=1,
+                    #                                     label="2.2 Model Image Gallery Page", interactive=True)
+                    # CivitaiMetaGrabber_model_version_id = gr.Slider(1, 100, value=1, step=1,
+                    #                                     label="2.2 Model Image Gallery Page", interactive=True)
+                    CivitaiMetaGrabber_go_button = gr.Button("Click grabber list first ")
+                    CivitaiMetaGrabber_gallery = gr.Gallery(label="Generated images", show_label=False,
+                                                            elem_id="gallery", columns=3, rows=1, object_fit="contain")
                     CivitaiMetaGrabber_history = gr.Dataframe(
                         interactive=True,
                         wrap=True,
@@ -677,8 +727,10 @@ class AutoLLM(scripts.Script):
                        CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
                        ]
         CivitaiMetaGrabber_go_button.click(self.CMG_getter,
-                                           inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag],
-                                           outputs=[CivitaiMetaGrabber_history,CivitaiMetaGrabber_gallery])
+                                           inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag,
+                                                   CivitaiMetaGrabber_page, CivitaiMetaGrabber_limit,
+                                                   CivitaiMetaGrabber_model_id, CivitaiMetaGrabber_model_version_id],
+                                           outputs=[CivitaiMetaGrabber_history, CivitaiMetaGrabber_gallery,CivitaiMetaGrabber_url,CivitaiMetaGrabber_model_id,CivitaiMetaGrabber_model_version_id])
         community_export_btn.click(community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
@@ -715,8 +767,8 @@ class AutoLLM(scripts.Script):
         # gr.update(self.llm_llm_answer, value='v222')
 
     def getRandomPrompt(self):
-        lenx=len(self.webpage_walker_array)
-        if lenx<1:
+        lenx = len(self.webpage_walker_array)
+        if lenx < 1:
             log.warning(f"_____[AUTO_LLM][getRandomPrompt][]Len<1. u need click grabber button first")
             return ''
         g_result = self.webpage_walker_array[random.randrange(0, lenx, 1)][1]
