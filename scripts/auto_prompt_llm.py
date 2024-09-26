@@ -37,6 +37,27 @@ detect_image_size_symbol = '\U0001F4D0'  # 📐
 
 # sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 # sys.stderr = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
+
+class Enum_Api_MODEL_ReturnType(enum.Enum):
+    l31 = 'llama3.1'
+    gpro = 'gemini-pro'
+    gpro_v = 'gemini-1.5-flash'
+
+    @classmethod
+    def values(cls):
+        return [e.value for e in cls]
+
+
+class Enum_Api_URL_ReturnType(enum.Enum):
+    LMStudio = 'http://localhost:1234/v1'
+    ollama = 'http://localhost:11434/v1'
+    gemini = 'https://generativelanguage.googleapis.com/v1'
+
+    @classmethod
+    def values(cls):
+        return [e.value for e in cls]
+
+
 class EnumCmdReturnType(enum.Enum):
     JUST_CALL = 'just-call'
     LLM_USER_PROMPT = 'LLM-USER-PROMPT'
@@ -95,6 +116,94 @@ def community_import_from_text(*args, **kwargs):
         log.warning("[X][Auto-LLM][Import-Fail]")
 
 
+def getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
+               llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, base64_image):
+    if 'google' in llm_apiurl:
+        if len(base64_image) > 0:
+            j = {
+                'contents': [
+                    {"role": "user",
+                     "parts": [{
+                         "text": f"{llm_text_ur_prompt}",
+                     }, {
+                         "inline_data": {
+                             "mime_type": "image/jpeg",
+                             "data": base64_image
+                         }
+                     }
+                     ]}
+                ],
+                "generationConfig": {
+                    "temperature": llm_text_tempture,
+                    "topK": llm_top_k_text,
+                    "topP": llm_top_p_text,
+                    "maxOutputTokens": llm_text_max_token
+                    #"responseMimeType": "text/plain"
+                }
+            }
+        else:
+            j = {
+                'contents': [
+                    {"role": "user",
+                     "parts": [{
+                         "text": f"{llm_text_ur_prompt}",
+                     }
+                     ]}
+                ],
+                "generationConfig": {
+                    "temperature": llm_text_tempture,
+                    "topK": llm_top_k_text,
+                    "topP": llm_top_p_text,
+                    "maxOutputTokens": llm_text_max_token
+                    # "responseMimeType": "text/plain"
+                }
+            }
+    else:
+        if len(base64_image) > 0:
+            j = {
+                'model': f"{llm_api_model_name}",
+                'messages': [
+                    {
+                        "role": "system",
+                        "content": f"{llm_text_system_prompt_eye}",
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"{llm_text_ur_prompt_eye}"},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                },
+                            },
+                        ],
+                    }
+                ],
+
+                'max_tokens': llm_text_max_token_eye,
+                'temperature': llm_text_tempture_eye,
+                'top_p': llm_top_p_vision,
+                'stream': False,
+            }
+        else:
+            j = {
+                'model': f'{llm_api_model_name}',
+                'messages': [
+                    {'role': 'system', 'content': f'{llm_text_system_prompt}'},
+                    {'role': 'user', 'content': f'{llm_text_ur_prompt}'}
+                ],
+                'max_tokens': llm_text_max_token,
+                'temperature': llm_text_tempture,
+                'top_p': llm_top_p_text,
+                "top_k": llm_top_k_text,
+                'stream': False,
+            }
+    log.warning(f"[][AutoLLM][getReq][Json]{j}")
+
+    return j
+
+
 class AutoLLM(scripts.Script):
     # client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
     llm_history_array = []
@@ -131,7 +240,7 @@ class AutoLLM(scripts.Script):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
 
-    def CMG_getter(self, CivitaiMetaGrabber_url:str, CivitaiMetaGrabber_target_tag, CivitaiMetaGrabber_page,
+    def CMG_getter(self, CivitaiMetaGrabber_url: str, CivitaiMetaGrabber_target_tag, CivitaiMetaGrabber_page,
                    CivitaiMetaGrabber_limit,
                    CivitaiMetaGrabber_model_id, CivitaiMetaGrabber_model_version_id):
         #https://github.com/civitai/civitai/wiki/REST-API-Reference/dff336bf9450cb11e80fb5a42327221ce3f09b45#get-apiv1images
@@ -149,7 +258,7 @@ class AutoLLM(scripts.Script):
                 CivitaiMetaGrabber_url += f"&modelVersionId={CivitaiMetaGrabber_model_version_id}"
 
         if '&sort=' not in str(CivitaiMetaGrabber_url):
-            CivitaiMetaGrabber_url += '&sort=Most Comments'
+            CivitaiMetaGrabber_url += '&sort=Most%20Comments'
         if '&limit=' not in str(CivitaiMetaGrabber_url):
             CivitaiMetaGrabber_url += f'&limit={CivitaiMetaGrabber_limit}'
         if '&page=' not in str(CivitaiMetaGrabber_url):
@@ -173,35 +282,50 @@ class AutoLLM(scripts.Script):
             gallery_arr.append((x1, x3))
 
             log.warning(f"[{index}][][auto_prompt_getter]URL: {x2} IMG: {x1}")
-        model_idx=0
-        model_version_idx=0
+        model_idx = 0
+        model_version_idx = 0
         try:
-            model_idx=re.search(r"modelId=(\d+)", CivitaiMetaGrabber_url,re.IGNORECASE|re.MULTILINE).group(1)
+            model_idx = re.search(r"modelId=(\d+)", CivitaiMetaGrabber_url, re.IGNORECASE | re.MULTILINE).group(1)
             log.warning(f"[][][model_idx]{model_idx}")
-            model_version_idx = re.search(r"modelVersionId=(\d+)", CivitaiMetaGrabber_url,re.IGNORECASE|re.MULTILINE).group(1)
+            model_version_idx = re.search(r"modelVersionId=(\d+)", CivitaiMetaGrabber_url,
+                                          re.IGNORECASE | re.MULTILINE).group(1)
             log.warning(f"[][][model_version_idx]{model_version_idx}")
         except AttributeError:
-            log.warning(f"[][][AttributeError]model_idx={model_idx} model_version_idx={model_version_idx}",)
+            log.warning(f"[][][AttributeError]model_idx={model_idx} model_version_idx={model_version_idx}", )
 
-        return self.webpage_walker_array, gallery_arr,CivitaiMetaGrabber_url, int(model_idx), int(model_version_idx)
+        return self.webpage_walker_array, gallery_arr, CivitaiMetaGrabber_url, int(model_idx), int(model_version_idx)
 
-    def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl):
+    def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl, llm_api_model_name):
         result_mix = ''
-        headers_x = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {llm_apikey}',
-        }
+        url_append = ''
+        if llm_apiurl.endswith('/'):
+            llm_apiurl = llm_apiurl[:-1]
+        if 'google' in llm_apiurl:
+            llm_apiurl += f'/models/{llm_api_model_name}:generateContent'
+            headers_x = {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': f'{llm_apikey}'
+            }
+        else:
+            llm_apiurl += '/chat/completions'
+            headers_x = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {llm_apikey}',
+            }
+        log.warning(f"[][AutoLLM][getReq][Header]{headers_x}")
+
         try:
             #lm-studio   http://localhost:1234/v1/chat/completions
-            #ollama     http://localhost:11434/v1/chat/completions
-            print('[Auto-LLM]call_llm_mix')
-            if llm_apiurl.endswith('/'):
-                llm_apiurl = llm_apiurl[:-1]
-            completion = requests.post(llm_apiurl + '/chat/completions', headers=headers_x, json=json_str_x)
+            #ollama      http://localhost:11434/v1/chat/completions
+            #google      https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent
+            log.warning(f"[Auto-LLM][][]Req URL=> {llm_apiurl}")
+            completion = requests.post(llm_apiurl, headers=headers_x, json=json_str_x)
             log.warning("[Auto-LLM][][]Server Ans=> " + completion.text)
-
             completion_json = completion.json()
-            result_mix = completion_json['choices'][0]['message']['content']
+            if 'google' in llm_apiurl:
+                result_mix = completion_json['candidates'][0]['content']['parts'][0]['text']
+            else:
+                result_mix = completion_json['choices'][0]['message']['content']
         except Exception as e:
             e = str(e)
             self.llm_history_array.append([e, e, e, e])
@@ -219,10 +343,12 @@ class AutoLLM(scripts.Script):
                           llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_ur_prompt_image_eye,
                           llm_text_tempture_eye,
                           llm_text_max_token_eye,
-                          llm_before_action_cmd_feedback_type, llm_before_action_cmd, llm_post_action_cmd_feedback_type,
+                          llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                          llm_post_action_cmd_feedback_type,
                           llm_post_action_cmd,
                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append):
+                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
+                          CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt):
         base64_image = ""
         path_maps = {
             "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
@@ -253,34 +379,11 @@ class AutoLLM(scripts.Script):
             return "missing input image ?", self.llm_history_array
         try:
             # self.check_api_uri(llm_apiurl, llm_apikey)
-
-            json_x0 = {
-                'model': f"{llm_api_model_name}",
-                'messages': [
-                    {
-                        "role": "system",
-                        "content": f"{llm_text_system_prompt_eye}",
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"{llm_text_ur_prompt_eye}"},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                },
-                            },
-                        ],
-                    }
-                ],
-
-                'max_tokens': llm_text_max_token_eye,
-                'temperature': llm_text_tempture_eye,
-                'top_p': llm_top_p_vision,
-                'stream': False,
-            }
-            result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl)
+            json_x0 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
+                                 llm_text_ur_prompt,
+                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token,
+                                 base64_image)
+            result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
 
         except Exception as e:
             e = str(e)
@@ -302,6 +405,9 @@ class AutoLLM(scripts.Script):
         self.do_subprocess_action(llm_post_action_cmd)
 
         return result, self.llm_history_array
+
+    def justRtn(self, r):
+        return r
 
     def call_llm_text(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                       llm_text_system_prompt, llm_text_ur_prompt,
@@ -335,19 +441,10 @@ class AutoLLM(scripts.Script):
             # llm_text_ur_prompt += self.webpage_walker_array[0][2]
         try:
 
-            json_x1 = {
-                'model': f'{llm_api_model_name}',
-                'messages': [
-                    {'role': 'system', 'content': f'{llm_text_system_prompt}'},
-                    {'role': 'user', 'content': f'{llm_text_ur_prompt}'}
-                ],
-                'max_tokens': llm_text_max_token,
-                'temperature': llm_text_tempture,
-                'top_p': llm_top_p_text,
-                'stream': False,
-            }
+            json_x1 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
+                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '')
 
-            result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl)
+            result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
@@ -355,18 +452,36 @@ class AutoLLM(scripts.Script):
                 for i in range(llm_loop_count_slider):
                     json_x2 = {
                         'model': f"{llm_api_model_name}",
+                        'contents': [
+                            {"role": "user", "parts": [
+                                {
+                                    "text": llm_loop_ur_prompt_array[
+                                                min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text
+                                }
+                            ]}
+                        ],
+                        "generationConfig": {
+                            "temperature": llm_text_tempture,
+                            "topK": llm_top_k_text,
+                            "topP": llm_top_p_text,
+                            "maxOutputTokens": llm_text_max_token,
+                            "responseMimeType": "text/plain"
+                        },
                         'messages': [
                             {"role": "system", "content": llm_text_system_prompt},
                             {"role": "user",
                              "content": llm_loop_ur_prompt_array[
                                             min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text}
                         ],
+                        "max_output_tokens": llm_text_max_token,
                         'max_tokens': llm_text_max_token,
                         'temperature': llm_text_tempture,
                         'top_p': llm_top_p_text,
+                        "top_k": llm_top_k_text,
                         'stream': False,
+                        "response_mime_type": "text/plain",
                     }
-                    llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl))
+                    llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
 
         except Exception as e:
             e = str(e)
@@ -414,18 +529,22 @@ class AutoLLM(scripts.Script):
 
             json_x3 = {
                 'model': f"{llm_api_model_name}",
+                'contents': [
+                    {"role": "user", "parts": [{"text": f"{llm_api_translate_user_prompt}"}]}
+                ],
                 'messages': [
                     {"role": "system", "content": llm_api_translate_system_prompt},
                     {"role": "user", "content": llm_api_translate_user_prompt}
                 ],
                 'max_tokens': _llm_text_max_token,
+                "max_output_tokens": _llm_text_max_token,
                 'temperature': 0.2,
             }
         except Exception as e:
             e = str(e)
             log.error(f"[][][call_llm_pythonlib]Error: {e}")
             return e
-        result_translate = self.call_llm_mix(llm_apikey, json_x3, llm_apiurl)
+        result_translate = self.call_llm_mix(llm_apikey, json_x3, llm_apiurl, llm_api_model_name)
 
         result_translate = result_translate.replace('\n', '').encode("utf-8").decode()
         log.warning(f"[][][call_llm_translate]: {result_translate}")
@@ -586,15 +705,23 @@ class AutoLLM(scripts.Script):
                                 "* OLLAMA OpenAI compatibility https://ollama.com/blog/openai-compatibility\n"
                                 )
                     llm_apiurl = gr.Textbox(
-                        label="1.[LLM-URL] | LMStudio=>http://localhost:1234/v1 | ollama=> http://localhost:11434/v1",
+                        label="1.[LLM-URL]  ",
                         lines=1,
                         value="http://localhost:1234/v1")
+                    llm_apiurl_radio = gr.Radio(Enum_Api_URL_ReturnType.values(),
+                                                value=Enum_Api_URL_ReturnType.values()[0],
+                                                label="1.1 Quick URL"
+                                                )
                     llm_apikey = gr.Textbox(label="2.[LLM-API-Key] lm-studio | ollama", lines=1, value="lm-studio")
                     llm_api_model_name = gr.Textbox(
-                        label="3.[LLM-Model-Name] lm-studio not need to set; ollama need. ex:llama3.1", lines=1,
+                        label="3.[LLM-Model-Name] its no need to set for lmstudio; others like:ollama gemini need. ",
+                        lines=1,
                         value="llama3.1",
-                        placeholder="llama3.1, llama2, gemma2")
-
+                        placeholder="llama3.1, llama2, gemma2 gemini-pro gemini-1.5-flash(vision)")
+                    llm_api_model_name_radio = gr.Radio(Enum_Api_MODEL_ReturnType.values(),
+                                                        value=Enum_Api_URL_ReturnType.values()[0],
+                                                        label="3.1 Quick MODEL"
+                                                        )
                     with gr.Row():
                         with gr.Column(scale=2):
                             llm_before_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(),
@@ -726,11 +853,16 @@ class AutoLLM(scripts.Script):
                        llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
                        CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
                        ]
+        llm_apiurl_radio.change(self.justRtn, inputs=llm_apiurl_radio, outputs=llm_apiurl)
+        llm_api_model_name_radio.change(self.justRtn, inputs=llm_api_model_name_radio, outputs=llm_api_model_name)
+
         CivitaiMetaGrabber_go_button.click(self.CMG_getter,
                                            inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag,
                                                    CivitaiMetaGrabber_page, CivitaiMetaGrabber_limit,
                                                    CivitaiMetaGrabber_model_id, CivitaiMetaGrabber_model_version_id],
-                                           outputs=[CivitaiMetaGrabber_history, CivitaiMetaGrabber_gallery,CivitaiMetaGrabber_url,CivitaiMetaGrabber_model_id,CivitaiMetaGrabber_model_version_id])
+                                           outputs=[CivitaiMetaGrabber_history, CivitaiMetaGrabber_gallery,
+                                                    CivitaiMetaGrabber_url, CivitaiMetaGrabber_model_id,
+                                                    CivitaiMetaGrabber_model_version_id])
         community_export_btn.click(community_export_to_text,
                                    inputs=all_var_val,
                                    outputs=[community_text])
