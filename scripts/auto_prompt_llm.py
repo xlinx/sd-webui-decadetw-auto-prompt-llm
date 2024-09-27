@@ -117,7 +117,9 @@ def community_import_from_text(*args, **kwargs):
 
 
 def getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
-               llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, base64_image):
+               llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, base64_image,
+               llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye, llm_text_tempture_eye,
+               llm_top_p_vision):
     if 'google' in llm_apiurl:
         if len(base64_image) > 0:
             j = {
@@ -199,7 +201,7 @@ def getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_promp
                 "top_k": llm_top_k_text,
                 'stream': False,
             }
-    log.warning(f"[][AutoLLM][getReq][Json]{j}")
+    # log.warning(f"[][AutoLLM][getReq][Json]{j}")
 
     return j
 
@@ -320,12 +322,13 @@ class AutoLLM(scripts.Script):
             #google      https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent
             log.warning(f"[Auto-LLM][][]Req URL=> {llm_apiurl}")
             completion = requests.post(llm_apiurl, headers=headers_x, json=json_str_x)
-            log.warning("[Auto-LLM][][]Server Ans=> " + completion.text)
             completion_json = completion.json()
             if 'google' in llm_apiurl:
                 result_mix = completion_json['candidates'][0]['content']['parts'][0]['text']
             else:
                 result_mix = completion_json['choices'][0]['message']['content']
+            log.warning("[Auto-LLM][][]Server Ans=> " + result_mix)
+
         except Exception as e:
             e = str(e)
             self.llm_history_array.append([e, e, e, e])
@@ -382,7 +385,9 @@ class AutoLLM(scripts.Script):
             json_x0 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
                                  llm_text_ur_prompt,
                                  llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token,
-                                 base64_image)
+                                 base64_image,
+                                 llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
+                                 llm_text_tempture_eye, llm_top_p_vision)
             result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
 
         except Exception as e:
@@ -442,7 +447,10 @@ class AutoLLM(scripts.Script):
         try:
 
             json_x1 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
-                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '')
+                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
+                                 llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
+                                 llm_text_tempture_eye,
+                                 llm_top_p_vision)
 
             result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
