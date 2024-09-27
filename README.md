@@ -312,6 +312,24 @@
         <img width="350" src="images/grabber3.png"/>
     </td>
  </tr>
+<tr>
+    <td style="width: 40%">
+        <b style="font-size:20px">[update] LLM-ask-LLM🌀</b>
+        <hr/> 
+        <b style="font-size:20px">[support] Cloud Service: Gemini Pro</b>
+        <hr/> 
+<ul>
+<li>cloud service: https://generativelanguage.googleapis.com/v1</li>
+<li>model: gemini-1.5-flash (vision)</li>
+<li>support text and vision</li>
+<li>it will get more🌀 and more🌀 and more🌀 like....(bottom to top)</li>
+</ul>
+</td>
+    <td>
+        <img width="350" src="images/llm_ask_llm_.png"/>
+    </td>
+ </tr>
+
 </table>
 
 ## Usage Tips 

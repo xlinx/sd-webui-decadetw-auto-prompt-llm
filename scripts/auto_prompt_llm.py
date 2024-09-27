@@ -352,18 +352,13 @@ class AutoLLM(scripts.Script):
                           llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
                           llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
                           CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt):
-        base64_image = ""
-        path_maps = {
-            "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
-            "img2img": opts.outdir_samples or opts.outdir_img2img_samples,
-            "txt2img-grids": opts.outdir_grids or opts.outdir_txt2img_grids,
-            "img2img-grids": opts.outdir_grids or opts.outdir_img2img_grids,
-            "Extras": opts.outdir_samples or opts.outdir_extras_samples
-        }
-        # https: // platform.openai.com / docs / guides / vision?lang = curl
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
-        # if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
-        #     llm_text_ur_prompt_image_eye = llm_before_action_cmd_return_value
+
+        if llm_recursive_use and (self.llm_history_array.__len__() > 1):
+            llm_text_ur_prompt = (llm_text_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
+                                 self.llm_history_array[self.llm_history_array.__len__() - 1][1]
+        base64_image = ""
+
         try:
             # if type(llm_text_ur_prompt_image_eye) == str:
             #     process_buffer = open(llm_text_ur_prompt_image_eye, "rb").read()
@@ -389,7 +384,20 @@ class AutoLLM(scripts.Script):
                                  llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
                                  llm_text_tempture_eye, llm_top_p_vision)
             result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
+            llm_answers_array = []
+            if llm_loop_enabled:
+                llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
+                for i in range(llm_loop_count_slider):
+                    json_x2 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
+                                         llm_loop_ur_prompt_array[
+                                             min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
+                                         llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
+                                         llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
+                                         llm_text_tempture_eye,
+                                         llm_top_p_vision)
+
+                    llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
         except Exception as e:
             e = str(e)
             log.error(f"[][][call_llm_eye_open]Model Error: {e}")
@@ -458,37 +466,14 @@ class AutoLLM(scripts.Script):
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
                 for i in range(llm_loop_count_slider):
-                    json_x2 = {
-                        'model': f"{llm_api_model_name}",
-                        'contents': [
-                            {"role": "user", "parts": [
-                                {
-                                    "text": llm_loop_ur_prompt_array[
-                                                min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text
-                                }
-                            ]}
-                        ],
-                        "generationConfig": {
-                            "temperature": llm_text_tempture,
-                            "topK": llm_top_k_text,
-                            "topP": llm_top_p_text,
-                            "maxOutputTokens": llm_text_max_token,
-                            "responseMimeType": "text/plain"
-                        },
-                        'messages': [
-                            {"role": "system", "content": llm_text_system_prompt},
-                            {"role": "user",
-                             "content": llm_loop_ur_prompt_array[
-                                            min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text}
-                        ],
-                        "max_output_tokens": llm_text_max_token,
-                        'max_tokens': llm_text_max_token,
-                        'temperature': llm_text_tempture,
-                        'top_p': llm_top_p_text,
-                        "top_k": llm_top_k_text,
-                        'stream': False,
-                        "response_mime_type": "text/plain",
-                    }
+                    json_x2 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
+                                         llm_loop_ur_prompt_array[
+                                             min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
+                                         llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
+                                         llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
+                                         llm_text_tempture_eye,
+                                         llm_top_p_vision)
+
                     llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
 
         except Exception as e:
@@ -575,8 +560,7 @@ class AutoLLM(scripts.Script):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
                     llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=False)
-                    llm_recursive_use = gr.Checkbox(label=" Recursive-prompt. Use the prompt from last one🌀",
-                                                    value=False)
+
                     llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request",
                                                            value=False)
 
@@ -688,16 +672,18 @@ class AutoLLM(scripts.Script):
                 #     llm_is_asking = gr.Checkbox(label="Enable asking", value=False)
                 # with gr.Tab("Gallery"):
                 #     gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=3, rows=1, object_fit="contain", height="auto")
-                with gr.Tab("LLM-text Loop"):
-                    gr.Markdown("* LLM-Text -> LLM-line-1 -> LLM-line-2 -> LLM-line-3 -> SD\n"
+                with gr.Tab("LLM-ask-LLM"):
+                    gr.Markdown("* LLM -> LLM-line-1 -> LLM-line-2 -> LLM-line-3 -> SD\n"
                                 "* digging into deep of model\n"
                                 "* model suggest 7B\n"
                                 "* 2.Append each. ==> u will get every line llm-answer separately.  \n"
                                 "* function discussions:  https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14 \n"
                                 )
-                    llm_loop_enabled = gr.Checkbox(label="1. Enable LLM-Text-Loop to SD-prompt", value=False)
+                    llm_recursive_use = gr.Checkbox(label="0. LLM-ask-LLM/Recursive-prompt. (Prompt from last LLM-Ans)🌀",
+                                                    value=False)
+                    llm_loop_enabled = gr.Checkbox(label="1. Append follow textarea each-line as feature to prompt", value=False)
                     llm_loop_each_append = gr.Checkbox(
-                        label="2.Append each LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
+                        label="2.Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
                         value=False)
                     llm_loop_count_slider = gr.Slider(1, 5, value=1, step=1,
                                                       label="2. LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
@@ -973,6 +959,15 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
 #               "Models",
 #         info="get models from local LLM. (:LM Studio)"
 #     )
-
+# path_maps = {
+#     "txt2img": opts.outdir_samples or opts.outdir_txt2img_samples,
+#     "img2img": opts.outdir_samples or opts.outdir_img2img_samples,
+#     "txt2img-grids": opts.outdir_grids or opts.outdir_txt2img_grids,
+#     "img2img-grids": opts.outdir_grids or opts.outdir_img2img_grids,
+#     "Extras": opts.outdir_samples or opts.outdir_extras_samples
+# }
+# https: // platform.openai.com / docs / guides / vision?lang = curl
+# if EnumCmdReturnType.LLM_VISION_IMG_PATH.value in llm_before_action_cmd_feedback_type:
+#     llm_text_ur_prompt_image_eye = llm_before_action_cmd_return_value
 # script_callbacks.on_ui_tabs(on_ui_tabs )
 #https://platform.openai.com/docs/api-reference/introduction
