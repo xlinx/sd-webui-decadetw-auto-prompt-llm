@@ -94,7 +94,7 @@ def write_to_file(filename, current_ui_settings):
 
 
 def community_export_to_text(*args, **kwargs):
-    dictx = (dict(zip(all_var_key, args)))
+    dictx = (dict(zip(all_var_key_wo_image, args)))
     write_to_file('Auto-LLM-settings.json', dictx)
     return json.dumps(dictx, indent=4)
 
@@ -108,7 +108,7 @@ def community_import_from_text(*args, **kwargs):
         else:
             jo = json.loads(args[0])
         import_data = []
-        for ele in all_var_key:
+        for ele in all_var_key_wo_image:
             import_data.append(jo[ele])
         log.warning("[O][Auto-LLM][Import-OK]")
         return import_data  #.append(json.dumps(jo, indent=4))
@@ -201,7 +201,8 @@ def getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_promp
                 "top_k": llm_top_k_text,
                 'stream': False,
             }
-    # log.warning(f"[][AutoLLM][getReq][Json]{j}")
+    log.warning(f"[][AutoLLM][getReq][llm_text_ur_prompt]{llm_text_ur_prompt}")
+    log.warning(f"[][AutoLLM][getReq][llm_text_ur_prompt_eye]{llm_text_ur_prompt_eye}")
 
     return j
 
@@ -327,6 +328,7 @@ class AutoLLM(scripts.Script):
                 result_mix = completion_json['candidates'][0]['content']['parts'][0]['text']
             else:
                 result_mix = completion_json['choices'][0]['message']['content']
+            result_mix = result_mix.replace('\n', '')
             log.warning("[Auto-LLM][][]Server Ans=> " + result_mix)
 
         except Exception as e:
@@ -409,7 +411,12 @@ class AutoLLM(scripts.Script):
         if llm_api_translate_enabled:
             result_translate = self.call_llm_translate(llm_apiurl, llm_apikey, llm_api_model_name,
                                                        llm_api_translate_system_prompt, result,
-                                                       llm_text_max_token_eye)
+                                                       llm_text_tempture, llm_top_k_text, llm_top_p_text,
+                                                       llm_text_max_token,
+                                                       llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
+                                                       llm_text_max_token_eye,
+                                                       llm_text_tempture_eye,
+                                                       llm_top_p_vision)
         self.llm_history_array.append([result, llm_text_system_prompt_eye, llm_text_ur_prompt_eye, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
@@ -489,7 +496,12 @@ class AutoLLM(scripts.Script):
         if llm_api_translate_enabled:
             result_translate = self.call_llm_translate(llm_apiurl, llm_apikey, llm_api_model_name,
                                                        llm_api_translate_system_prompt, result,
-                                                       llm_text_max_token)
+                                                       llm_text_tempture, llm_top_k_text, llm_top_p_text,
+                                                       llm_text_max_token,
+                                                       llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
+                                                       llm_text_max_token_eye,
+                                                       llm_text_tempture_eye,
+                                                       llm_top_p_vision)
 
         self.llm_history_array.append([result, llm_text_ur_prompt, llm_text_system_prompt, result_translate])
         if len(self.llm_history_array) > 3:
@@ -515,24 +527,22 @@ class AutoLLM(scripts.Script):
             self.llm_history_array.append(["[X]PostAction-Command failed.", err, llm_post_action_cmd, out])
         return out
 
-    def call_llm_translate(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_api_translate_system_prompt,
-                           llm_api_translate_user_prompt,
-                           _llm_text_max_token):
+    def call_llm_translate(self, llm_apiurl, llm_apikey, llm_api_model_name, llm_api_translate_system_prompt, result,
+                           llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token,
+                           llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
+                           llm_text_tempture_eye,
+                           llm_top_p_vision):
         try:
+            llm_text_ur_prompt = result
+            if 'google' in llm_apiurl:
+                llm_text_ur_prompt = llm_api_translate_system_prompt + '. please translate follow sentence: ' + result
+            json_x3 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_api_translate_system_prompt,
+                                 llm_text_ur_prompt,
+                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
+                                 llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
+                                 llm_text_tempture_eye,
+                                 llm_top_p_vision)
 
-            json_x3 = {
-                'model': f"{llm_api_model_name}",
-                'contents': [
-                    {"role": "user", "parts": [{"text": f"{llm_api_translate_user_prompt}"}]}
-                ],
-                'messages': [
-                    {"role": "system", "content": llm_api_translate_system_prompt},
-                    {"role": "user", "content": llm_api_translate_user_prompt}
-                ],
-                'max_tokens': _llm_text_max_token,
-                "max_output_tokens": _llm_text_max_token,
-                'temperature': 0.2,
-            }
         except Exception as e:
             e = str(e)
             log.error(f"[][][call_llm_pythonlib]Error: {e}")
@@ -679,16 +689,19 @@ class AutoLLM(scripts.Script):
                                 "* 2.Append each. ==> u will get every line llm-answer separately.  \n"
                                 "* function discussions:  https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14 \n"
                                 )
-                    llm_recursive_use = gr.Checkbox(label="0. LLM-ask-LLM/Recursive-prompt. (Prompt from last LLM-Ans)🌀",
-                                                    value=False)
-                    llm_loop_enabled = gr.Checkbox(label="1. Append follow textarea each-line as feature to prompt", value=False)
-                    llm_loop_each_append = gr.Checkbox(
-                        label="2.Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
+                    llm_recursive_use = gr.Checkbox(
+                        label="0. LLM-ask-LLM/Recursive-prompt. (Prompt from last LLM-Ans)🌀",
                         value=False)
+                    llm_loop_each_append = gr.Checkbox(
+                        label="1. Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
+                        value=False)
+                    llm_loop_enabled = gr.Checkbox(label="2.1 Append follow textarea each-line as feature to prompt",
+                                                   value=False)
+
                     llm_loop_count_slider = gr.Slider(1, 5, value=1, step=1,
-                                                      label="2. LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
+                                                      label="2.2 LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
                     llm_loop_ur_prompt = gr.Textbox(
-                        label="3. option.[LLM-Loop-Your-Prompt] line by line append to every loop",
+                        label="2.3 line by line append to every loop",
                         lines=3,
                         value="red\nyellow\nblue",
                         placeholder="red\nyellow\nblue")
@@ -847,6 +860,22 @@ class AutoLLM(scripts.Script):
                        llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
                        CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
                        ]
+        all_var_val_wo_image = [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
+                                llm_text_system_prompt, llm_text_ur_prompt,
+                                llm_text_max_token, llm_text_tempture,
+                                llm_apiurl, llm_apikey, llm_api_model_name,
+                                llm_api_translate_system_prompt, llm_api_translate_enabled,
+                                llm_is_open_eye,
+                                llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
+                                llm_text_tempture_eye,
+                                llm_text_max_token_eye,
+                                llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                                llm_post_action_cmd_feedback_type,
+                                llm_post_action_cmd,
+                                llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
+                                llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
+                                CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
+                                ]
         llm_apiurl_radio.change(self.justRtn, inputs=llm_apiurl_radio, outputs=llm_apiurl)
         llm_api_model_name_radio.change(self.justRtn, inputs=llm_api_model_name_radio, outputs=llm_api_model_name)
 
@@ -858,11 +887,11 @@ class AutoLLM(scripts.Script):
                                                     CivitaiMetaGrabber_url, CivitaiMetaGrabber_model_id,
                                                     CivitaiMetaGrabber_model_version_id])
         community_export_btn.click(community_export_to_text,
-                                   inputs=all_var_val,
+                                   inputs=all_var_val_wo_image,
                                    outputs=[community_text])
         community_import_btn.click(community_import_from_text,
                                    inputs=community_text,
-                                   outputs=all_var_val)
+                                   outputs=all_var_val_wo_image)
         llm_button_eye.click(self.call_llm_eye_open,
                              inputs=all_var_val,
                              outputs=[llm_llm_answer_eye, llm_history_eye])
@@ -948,6 +977,22 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
                'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider', 'llm_loop_each_append',
                'CivitaiMetaGrabber_to_llm_text_ur_prompt', 'CivitaiMetaGrabber_to_prompt'
                ]
+all_var_key_wo_image = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use',
+                        'llm_text_system_prompt', 'llm_text_ur_prompt',
+                        'llm_text_max_token', 'llm_text_tempture',
+                        'llm_apiurl', 'llm_apikey', 'llm_api_model_name',
+                        'llm_api_translate_system_prompt', 'llm_api_translate_enabled',
+                        'llm_is_open_eye',
+                        'llm_text_system_prompt_eye', 'llm_text_ur_prompt_eye',
+                        'llm_text_tempture_eye',
+                        'llm_text_max_token_eye',
+                        'llm_before_action_cmd_feedback_type', 'llm_before_action_cmd',
+                        'llm_post_action_cmd_feedback_type',
+                        'llm_post_action_cmd',
+                        'llm_top_k_text', 'llm_top_p_text', 'llm_top_k_vision', 'llm_top_p_vision',
+                        'llm_loop_enabled', 'llm_loop_ur_prompt', 'llm_loop_count_slider', 'llm_loop_each_append',
+                        'CivitaiMetaGrabber_to_llm_text_ur_prompt', 'CivitaiMetaGrabber_to_prompt'
+                        ]
 # with gr.Row():
 #    js_neg_prompt_js = gr.Textbox(label="[Negative prompt-JS]", lines=3, value="{}")
 #    js_neg_result = gr.Textbox(label="[Negative prompt-JS-Result]", lines=3, value="result")
