@@ -116,93 +116,60 @@ def community_import_from_text(*args, **kwargs):
         log.warning("[X][Auto-LLM][Import-Fail]")
 
 
-def getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
-               llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, base64_image,
-               llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye, llm_text_tempture_eye,
-               llm_top_p_vision):
+def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, temperature, top_k, top_p, max_token,
+               base64_image):
     if 'google' in llm_apiurl:
-        if len(base64_image) > 0:
-            j = {
-                'contents': [
-                    {"role": "user",
-                     "parts": [{
-                         "text": f"{llm_text_ur_prompt}",
-                     }, {
-                         "inline_data": {
-                             "mime_type": "image/jpeg",
-                             "data": base64_image
-                         }
-                     }
-                     ]}
-                ],
-                "generationConfig": {
-                    "temperature": llm_text_tempture,
-                    "topK": llm_top_k_text,
-                    "topP": llm_top_p_text,
-                    "maxOutputTokens": llm_text_max_token
-                    #"responseMimeType": "text/plain"
+        j = {
+            # "system_instruction": {
+            #     "parts":
+            #         {"text": system_prompt}
+            # },
+            'contents': [
+                {"role": "user",
+                 "parts": [{
+                     "text": f"{system_prompt} follow above instruction and helping answer below sentences {ur_prompt}",
+                 }
+                 ]}
+            ], "generationConfig": {
+                "temperature": temperature,
+                "topK": top_k,
+                "topP": top_p,
+                "maxOutputTokens": max_token
+            }
+        }
+        if base64_image is not None:
+            i = {
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": base64_image,
                 }
             }
-        else:
-            j = {
-                'contents': [
-                    {"role": "user",
-                     "parts": [{
-                         "text": f"{llm_text_ur_prompt}",
-                     }
-                     ]}
-                ],
-                "generationConfig": {
-                    "temperature": llm_text_tempture,
-                    "topK": llm_top_k_text,
-                    "topP": llm_top_p_text,
-                    "maxOutputTokens": llm_text_max_token
-                    # "responseMimeType": "text/plain"
-                }
-            }
+            j['contents'][0]['parts'].append(i)
     else:
-        if len(base64_image) > 0:
-            j = {
-                'model': f"{llm_api_model_name}",
-                'messages': [
-                    {
-                        "role": "system",
-                        "content": f"{llm_text_system_prompt_eye}",
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"{llm_text_ur_prompt_eye}"},
+        j = {
+            'model': f'{llm_api_model_name}',
+            'messages': [
+                {'role': 'system', 'content': f'{system_prompt}'},
+                {'role': 'user', 'content': f'{ur_prompt}'}
+            ],
+            'max_tokens': max_token,
+            'temperature': temperature,
+            'top_p': top_p,
+            'top_k': top_k,
+            'stream': False,
+        }
+        if base64_image is not None:
+            j['messages'][1]['content'] = [
+                            {"type": "text", "text": f"{ur_prompt}"},
                             {
                                 "type": "image_url",
                                 "image_url": {
                                     "url": f"data:image/jpeg;base64,{base64_image}"
                                 },
                             },
-                        ],
-                    }
-                ],
+                        ]
 
-                'max_tokens': llm_text_max_token_eye,
-                'temperature': llm_text_tempture_eye,
-                'top_p': llm_top_p_vision,
-                'stream': False,
-            }
-        else:
-            j = {
-                'model': f'{llm_api_model_name}',
-                'messages': [
-                    {'role': 'system', 'content': f'{llm_text_system_prompt}'},
-                    {'role': 'user', 'content': f'{llm_text_ur_prompt}'}
-                ],
-                'max_tokens': llm_text_max_token,
-                'temperature': llm_text_tempture,
-                'top_p': llm_top_p_text,
-                "top_k": llm_top_k_text,
-                'stream': False,
-            }
-    log.warning(f"[][AutoLLM][getReq][llm_text_ur_prompt]{llm_text_ur_prompt}")
-    log.warning(f"[][AutoLLM][getReq][llm_text_ur_prompt_eye]{llm_text_ur_prompt_eye}")
+    log.warning(f"[][AutoLLM][getReq][llm_text_ur_prompt]{ur_prompt}")
 
     return j
 
@@ -299,6 +266,7 @@ class AutoLLM(scripts.Script):
         return self.webpage_walker_array, gallery_arr, CivitaiMetaGrabber_url, int(model_idx), int(model_version_idx)
 
     def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl, llm_api_model_name):
+
         result_mix = ''
         url_append = ''
         if llm_apiurl.endswith('/'):
@@ -316,13 +284,14 @@ class AutoLLM(scripts.Script):
                 'Authorization': f'Bearer {llm_apikey}',
             }
         log.warning(f"[][AutoLLM][getReq][Header]{headers_x}")
-
+        completion_text=''
         try:
             #lm-studio   http://localhost:1234/v1/chat/completions
             #ollama      http://localhost:11434/v1/chat/completions
             #google      https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent
             log.warning(f"[Auto-LLM][][]Req URL=> {llm_apiurl}")
             completion = requests.post(llm_apiurl, headers=headers_x, json=json_str_x)
+            completion_text = completion.text
             completion_json = completion.json()
             if 'google' in llm_apiurl:
                 result_mix = completion_json['candidates'][0]['content']['parts'][0]['text']
@@ -335,7 +304,7 @@ class AutoLLM(scripts.Script):
             e = str(e)
             self.llm_history_array.append([e, e, e, e])
             result_mix = "[Auto-LLM][Result][Missing LLM-Text]" + e
-            log.warning("[Auto-LLM][][]Missing LLM Server?" + e)
+            log.warning(f"[X][Auto-LLM][][]Missing LLM Server? err={e} response={completion_text}")
         result_mix = result_mix.replace('\n', ' ')
         return result_mix
 
@@ -379,25 +348,19 @@ class AutoLLM(scripts.Script):
             return "missing input image ?", self.llm_history_array
         try:
             # self.check_api_uri(llm_apiurl, llm_apikey)
-            json_x0 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
-                                 llm_text_ur_prompt,
-                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token,
-                                 base64_image,
-                                 llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
-                                 llm_text_tempture_eye, llm_top_p_vision)
+            json_x0 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
+                                 llm_text_tempture_eye, llm_top_k_vision, llm_top_p_vision, llm_text_max_token_eye,
+                                 base64_image)
             result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
                 for i in range(llm_loop_count_slider):
-                    json_x2 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
+                    json_x2 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt,
                                          llm_loop_ur_prompt_array[
                                              min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
-                                         llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
-                                         llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
-                                         llm_text_tempture_eye,
-                                         llm_top_p_vision)
+                                         llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
                     llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
         except Exception as e:
@@ -416,7 +379,7 @@ class AutoLLM(scripts.Script):
                                                        llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
                                                        llm_text_max_token_eye,
                                                        llm_text_tempture_eye,
-                                                       llm_top_p_vision)
+                                                       llm_top_p_vision, llm_top_k_vision)
         self.llm_history_array.append([result, llm_text_system_prompt_eye, llm_text_ur_prompt_eye, result_translate])
         if len(self.llm_history_array) > 3:
             self.llm_history_array.remove(self.llm_history_array[0])
@@ -461,11 +424,8 @@ class AutoLLM(scripts.Script):
             # llm_text_ur_prompt += self.webpage_walker_array[0][2]
         try:
 
-            json_x1 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
-                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
-                                 llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
-                                 llm_text_tempture_eye,
-                                 llm_top_p_vision)
+            json_x1 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
+                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
             result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
@@ -473,13 +433,10 @@ class AutoLLM(scripts.Script):
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
                 for i in range(llm_loop_count_slider):
-                    json_x2 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_text_system_prompt,
+                    json_x2 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt,
                                          llm_loop_ur_prompt_array[
                                              min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
-                                         llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
-                                         llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
-                                         llm_text_tempture_eye,
-                                         llm_top_p_vision)
+                                         llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
                     llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
 
@@ -501,7 +458,7 @@ class AutoLLM(scripts.Script):
                                                        llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
                                                        llm_text_max_token_eye,
                                                        llm_text_tempture_eye,
-                                                       llm_top_p_vision)
+                                                       llm_top_p_vision, llm_top_k_vision)
 
         self.llm_history_array.append([result, llm_text_ur_prompt, llm_text_system_prompt, result_translate])
         if len(self.llm_history_array) > 3:
@@ -531,17 +488,13 @@ class AutoLLM(scripts.Script):
                            llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token,
                            llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
                            llm_text_tempture_eye,
-                           llm_top_p_vision):
+                           llm_top_p_vision, llm_top_k_vision):
         try:
             llm_text_ur_prompt = result
-            if 'google' in llm_apiurl:
-                llm_text_ur_prompt = llm_api_translate_system_prompt + '. please translate follow sentence: ' + result
-            json_x3 = getReqJson(llm_apiurl, llm_apikey, llm_api_model_name, llm_api_translate_system_prompt,
-                                 llm_text_ur_prompt,
-                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '',
-                                 llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_max_token_eye,
-                                 llm_text_tempture_eye,
-                                 llm_top_p_vision)
+            # if 'google' in llm_apiurl:
+            #     llm_text_ur_prompt = llm_api_translate_system_prompt + '. please translate follow sentence: ' + result
+            json_x3 = getReqJson(llm_apiurl, llm_api_model_name, llm_api_translate_system_prompt, llm_text_ur_prompt,
+                                 llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, '')
 
         except Exception as e:
             e = str(e)
