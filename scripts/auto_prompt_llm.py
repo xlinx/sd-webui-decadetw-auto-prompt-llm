@@ -42,7 +42,7 @@ class Enum_Api_MODEL_ReturnType(enum.Enum):
     l31 = 'llama3.1'
     gpro = 'gemini-pro'
     gpro_v = 'gemini-1.5-flash'
-
+    gpt4omini = 'gpt-4o-mini'
     @classmethod
     def values(cls):
         return [e.value for e in cls]
@@ -52,6 +52,7 @@ class Enum_Api_URL_ReturnType(enum.Enum):
     LMStudio = 'http://localhost:1234/v1'
     ollama = 'http://localhost:11434/v1'
     gemini = 'https://generativelanguage.googleapis.com/v1'
+    openai = 'https://api.openai.com/v1/'
 
     @classmethod
     def values(cls):
@@ -155,7 +156,7 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
             'max_tokens': max_token,
             'temperature': temperature,
             'top_p': top_p,
-            'top_k': top_k,
+            #'top_k': top_k,
             'stream': False,
         }
         if base64_image is not None:
