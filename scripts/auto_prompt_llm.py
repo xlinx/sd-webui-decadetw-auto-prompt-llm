@@ -43,6 +43,7 @@ class Enum_Api_MODEL_ReturnType(enum.Enum):
     gpro = 'gemini-pro'
     gpro_v = 'gemini-1.5-flash'
     gpt4omini = 'gpt-4o-mini'
+
     @classmethod
     def values(cls):
         return [e.value for e in cls]
@@ -161,14 +162,14 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
         }
         if base64_image is not None:
             j['messages'][1]['content'] = [
-                            {"type": "text", "text": f"{ur_prompt}"},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                },
-                            },
-                        ]
+                {"type": "text", "text": f"{ur_prompt}"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}"
+                    },
+                },
+            ]
 
     log.warning(f"[][AutoLLM][getReq][llm_text_ur_prompt]{ur_prompt}")
 
@@ -210,6 +211,35 @@ class AutoLLM(scripts.Script):
     # def check_api_uri(self, llm_apiurl, llm_apikey):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
+
+    def model_by_TAG_getter(self, url, tag_count):
+        headers = {'user-agent': 'Mozilla/5.0'}
+        completion = requests.get(f"{url}&limit={tag_count}", headers=headers).json()
+        gallery_arr = []
+        table_arr=[]
+        for index, ele in enumerate(completion['items']):
+            try:
+                x1 = ele['modelVersions'][0]['images'][0]['url'] or ""
+            except IndexError:
+                x1 = "https://wiki.civitai.com/images/thumb/1/17/Logo_%28Light%29.png/300px-Logo_%28Light%29.png"
+            x2 = ele['id'] or ""
+            name = ele['name']
+            downloadCount = ele['stats']['downloadCount'] or ""
+            x3 = ele['modelVersions'][0]['id'] or ""
+            table_arr.append((f"{x2}@{x3}", name, f"https://civitai.com/models/{x2}", downloadCount))
+            gallery_arr.append((x1, f"{x2}@{x3} {name}")) #urn:air:flux1:checkpoint:civitai:618692@691639
+        return [gallery_arr,table_arr]
+
+    def TAG_getter(self, url, tag_count):
+        headers = {'user-agent': 'Mozilla/5.0'}
+        completion = requests.get(f"{url}?limit={tag_count}", headers=headers).json()
+        tag_arr = []
+        for index, ele in enumerate(completion['items']):
+            x1 = ele['name'] or ""
+            x2 = ele['modelCount'] or ""
+            x3 = ele['link'] or ""
+            tag_arr.append((x1, x2, x3))
+        return tag_arr
 
     def CMG_getter(self, CivitaiMetaGrabber_url: str, CivitaiMetaGrabber_target_tag, CivitaiMetaGrabber_page,
                    CivitaiMetaGrabber_limit,
@@ -285,7 +315,7 @@ class AutoLLM(scripts.Script):
                 'Authorization': f'Bearer {llm_apikey}',
             }
         log.warning(f"[][AutoLLM][getReq][Header]{headers_x}")
-        completion_text=''
+        completion_text = ''
         try:
             #lm-studio   http://localhost:1234/v1/chat/completions
             #ollama      http://localhost:11434/v1/chat/completions
@@ -665,24 +695,26 @@ class AutoLLM(scripts.Script):
                                 "* API-ModelName: LMStudio can be empty here is fine; select it LMStudio App; ollama should set like: llama3.1 (cmd:ollama list)\n"
                                 "* OLLAMA OpenAI compatibility https://ollama.com/blog/openai-compatibility\n"
                                 )
-                    llm_apiurl = gr.Textbox(
-                        label="1.[LLM-URL]  ",
-                        lines=1,
-                        value="http://localhost:1234/v1")
-                    llm_apiurl_radio = gr.Radio(Enum_Api_URL_ReturnType.values(),
-                                                value=Enum_Api_URL_ReturnType.values()[0],
-                                                label="1.1 Quick URL"
-                                                )
+                    with gr.Row():
+                        llm_apiurl = gr.Textbox(
+                            label="1.[LLM-URL]  ",
+                            lines=1,
+                            value="http://localhost:1234/v1")
+                        llm_apiurl_radio = gr.Radio(Enum_Api_URL_ReturnType.values(),
+                                                    value=Enum_Api_URL_ReturnType.values()[0],
+                                                    label="1.1 Quick URL"
+                                                    )
                     llm_apikey = gr.Textbox(label="2.[LLM-API-Key] lm-studio | ollama", lines=1, value="lm-studio")
-                    llm_api_model_name = gr.Textbox(
-                        label="3.[LLM-Model-Name] its no need to set for lmstudio; others like:ollama gemini need. ",
-                        lines=1,
-                        value="llama3.1",
-                        placeholder="llama3.1, llama2, gemma2 gemini-pro gemini-1.5-flash(vision)")
-                    llm_api_model_name_radio = gr.Radio(Enum_Api_MODEL_ReturnType.values(),
-                                                        value=Enum_Api_URL_ReturnType.values()[0],
-                                                        label="3.1 Quick MODEL"
-                                                        )
+                    with gr.Row():
+                        llm_api_model_name = gr.Textbox(
+                            label="3.[LLM-Model-Name] its no need to set for lmstudio; others like:ollama gemini need. ",
+                            lines=1,
+                            value="llama3.1",
+                            placeholder="llama3.1, llama2, gemma2 gemini-pro gemini-1.5-flash(vision)")
+                        llm_api_model_name_radio = gr.Radio(Enum_Api_MODEL_ReturnType.values(),
+                                                            value=Enum_Api_URL_ReturnType.values()[0],
+                                                            label="3.1 Quick MODEL"
+                                                            )
                     with gr.Row():
                         with gr.Column(scale=2):
                             llm_before_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(),
@@ -718,72 +750,127 @@ class AutoLLM(scripts.Script):
                                 info="call ur script(.bat, .sh) ")
 
                     llm_api_translate_enabled = gr.Checkbox(
-                        label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference. )",
+                        label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference on ur favorite language. )",
                         value=False)
                     llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
                                                                  value=self.llm_sys_translate_template)
                 with gr.Tab("Civitai Meta Grabber"):
-                    gr.Markdown("- Quick walk through all image style prompt of model that u never download\n"
-                                "   - second-model(no need download just ref prompt) for generate with ur(main-model) 1girl. \n"
-                                "   - then u should get 1girl with indoor-design and describe background in-detail quickly\n"
-                                "   - auto Find all images meta(prompt...) under this model \n"
-                                "- API manual = https://civitai.com/api/v1/images\n"
-                                "   - API URL example: https://civitai.com/api/v1/images?modelId=85691\n"
-                                "   - if model have multi version, ex: https://civitai.com/api/v1/images?limit=100&modelId=43331&modelVersionId=176425 \n"
-                                "- [NEW] Civitai AIR ‐ Uniform Resource Names for AI\n"
-                                "   - manual: https://github.com/civitai/civitai/wiki/AIR-%E2%80%90-Uniform-Resource-Names-for-AI\n"
-                                "   - ***How find AIR. look every model detail bottom of side menu.(click copy)\n"
-                                "   - ***Civitai AIR look like this=> urn:air:sd1:checkpoint:civitai:85691@93152\n"
-                                )
-                    CivitaiMetaGrabber_to_llm_text_ur_prompt = gr.Checkbox(
-                        label="Random Pick (2.customer_var) to LLM-text-ur-prompt (need enable LLM-text)",
-                        value=False)
-                    CivitaiMetaGrabber_to_prompt = gr.Checkbox(
-                        label="Random Pick (2.customer_var) to Prompt (No need enable LLM-text just append prompt without ask LLM)",
-                        value=False)
-                    auto_prompt_getter_remove_lora_tag = gr.Checkbox(
-                        label="Remove Lora tag in prompt (any char inside <***>)", value=True)
+                    with gr.Tab("prompt from Model"):
+                        gr.Markdown("- Quick walk through all image style prompt of model that u never download\n"
+                                    "   - second-model(no need download just ref prompt) for generate with ur(main-model) 1girl. \n"
+                                    "   - then u should get 1girl with indoor-design and describe background in-detail quickly\n"
+                                    "   - auto Find all images meta(prompt...) under this model \n"
+                                    "- API manual = https://civitai.com/api/v1/images\n"
+                                    "   - API URL example: https://civitai.com/api/v1/images?modelId=85691\n"
+                                    "   - if model have multi version, ex: https://civitai.com/api/v1/images?limit=100&modelId=43331&modelVersionId=176425 \n"
+                                    "- [NEW] Civitai AIR ‐ Uniform Resource Names for AI\n"
+                                    "   - manual: https://github.com/civitai/civitai/wiki/AIR-%E2%80%90-Uniform-Resource-Names-for-AI\n"
+                                    "   - ***How find AIR. look every model detail bottom of side menu.(click copy)\n"
+                                    "   - ***Civitai AIR look like this=> urn:air:sd1:checkpoint:civitai:85691@93152\n"
+                                    )
+                        CivitaiMetaGrabber_to_llm_text_ur_prompt = gr.Checkbox(
+                            label="Random Pick (2.customer_var) to LLM-text-ur-prompt (need enable LLM-text)",
+                            value=False)
+                        CivitaiMetaGrabber_to_prompt = gr.Checkbox(
+                            label="Random Pick (2.customer_var) to Prompt (No need enable LLM-text just append prompt without ask LLM)",
+                            value=False)
+                        auto_prompt_getter_remove_lora_tag = gr.Checkbox(
+                            label="Remove Lora tag in prompt (any char inside <***>)", value=True)
 
-                    CivitaiMetaGrabber_url = gr.Textbox(
-                        label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 )",
-                        lines=1,
-                        value="https://civitai.com/api/v1/images?modelId=85691",
-                        placeholder="https://civitai.com/api/v1/images?modelId=85691",
-                        info="")
-                    with gr.Row():
-                        CivitaiMetaGrabber_model_id = gr.Slider(0, 999999, value=0, step=1,
-                                                                label="1.1 Civitai Model ID(0 use above URL setting)",
+                        CivitaiMetaGrabber_url = gr.Textbox(
+                            label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 )",
+                            lines=1,
+                            value="https://civitai.com/api/v1/images?modelId=85691",
+                            placeholder="https://civitai.com/api/v1/images?modelId=85691",
+                            info="")
+                        with gr.Row():
+                            CivitaiMetaGrabber_model_id = gr.Slider(0, 999999, value=0, step=1,
+                                                                    label="1.1 Civitai Model ID(0 use above URL setting)",
+                                                                    interactive=True)
+                            CivitaiMetaGrabber_model_version_id = gr.Slider(0, 999999, value=0, step=1,
+                                                                            label="1.2 Civitai Model Version ID(0 use above URL setting)",
+                                                                            interactive=True)
+                        CivitaiMetaGrabber_target_tag = gr.Textbox(
+                            label="2.1 customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
+                            lines=1,
+                            value="prompt",
+                            placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
+                            info="")
+                        with gr.Row():
+                            CivitaiMetaGrabber_limit = gr.Slider(1, 100, value=10, step=1,
+                                                                 label="2.3 How many result per page", interactive=True)
+                            CivitaiMetaGrabber_page = gr.Slider(1, 100, value=1, step=1,
+                                                                label="2.2 Model Image Gallery Page NO.",
                                                                 interactive=True)
-                        CivitaiMetaGrabber_model_version_id = gr.Slider(0, 999999, value=0, step=1,
-                                                                        label="1.2 Civitai Model Version ID(0 use above URL setting)",
-                                                                        interactive=True)
-                    CivitaiMetaGrabber_target_tag = gr.Textbox(
-                        label="2.1 customer_var (prompt | negativePrompt | comfy | ...)(pick var left side menu https://civitai.com/search/images?query=realistic)",
-                        lines=1,
-                        value="prompt",
-                        placeholder="prompt negativePrompt id url hash width nsfw nsfwLevel createAt...",
-                        info="")
-                    with gr.Row():
-                        CivitaiMetaGrabber_limit = gr.Slider(1, 100, value=10, step=1,
-                                                             label="2.3 How many result per page", interactive=True)
-                        CivitaiMetaGrabber_page = gr.Slider(1, 100, value=1, step=1,
-                                                            label="2.2 Model Image Gallery Page NO.", interactive=True)
-                    # CivitaiMetaGrabber_model_id = gr.Slider(1, 100, value=1, step=1,
-                    #                                     label="2.2 Model Image Gallery Page", interactive=True)
-                    # CivitaiMetaGrabber_model_version_id = gr.Slider(1, 100, value=1, step=1,
-                    #                                     label="2.2 Model Image Gallery Page", interactive=True)
-                    CivitaiMetaGrabber_go_button = gr.Button("Click grabber list first ")
-                    CivitaiMetaGrabber_gallery = gr.Gallery(label="Generated images", show_label=False,
-                                                            elem_id="gallery", columns=3, rows=1, object_fit="contain")
-                    CivitaiMetaGrabber_history = gr.Dataframe(
-                        interactive=True,
-                        wrap=True,
-                        label="List all Meta in this model",
-                        headers=["prompt", "customer_var", "image_url", "post_url"],
-                        datatype=["str", "str", "str", "str"],
-                        row_count=3,
-                        col_count=(4, "fixed"),
-                    )
+                        # CivitaiMetaGrabber_model_id = gr.Slider(1, 100, value=1, step=1,
+                        #                                     label="2.2 Model Image Gallery Page", interactive=True)
+                        # CivitaiMetaGrabber_model_version_id = gr.Slider(1, 100, value=1, step=1,
+                        #                                     label="2.2 Model Image Gallery Page", interactive=True)
+                        CivitaiMetaGrabber_go_button = gr.Button("Click grabber list first ")
+                        CivitaiMetaGrabber_gallery = gr.Gallery(label="Generated images", show_label=False,
+                                                                elem_id="gallery", columns=3, rows=1,
+                                                                object_fit="contain")
+                        CivitaiMetaGrabber_history = gr.Dataframe(
+                            interactive=True,
+                            wrap=True,
+                            label="List all Meta in this model",
+                            headers=["prompt", "customer_var", "image_url", "post_url"],
+                            datatype=["str", "str", "str", "str"],
+                            row_count=3,
+                            col_count=(4, "fixed"),
+                        )
+                    with gr.Tab("analysis model by Tag"):
+                        gr.Markdown("- Quick walk through all model by tag in Civitai\n" )
+
+                        with gr.Row():
+                            with gr.Column(scale=4):
+                                CivitaiMetaGrabber_url_fromTag = gr.Textbox(
+                                    label="1.1 URL https://civitai.com/api/v1/tags",
+                                    lines=1,
+                                    value="https://civitai.com/api/v1/tags",
+                                    placeholder="https://civitai.com/api/v1/tags",
+                                    info="")
+                            with gr.Column(scale=1):
+                                CivitaiMetaGrabber_tag_count_fromTag = gr.Slider(1, 300, value=3, step=1,
+                                                                                 label="1.2 tag count limit, order by used in model descript",
+                                                                                 interactive=True)
+                        CivitaiMetaGrabber_tag_list_button_fromTag = gr.Button("Click grabber list first ")
+
+                        CivitaiMetaGrabber_history_tag_list_fromTag = gr.Dataframe(
+                            interactive=True,
+                            wrap=True,
+                            label="List Tags",
+                            headers=["tag name", "modelCount", "link"],
+                            datatype=["str", "str", "str"],
+                            row_count=1,
+                            col_count=(3, "fixed"),
+                        )
+                        with gr.Row():
+                            with gr.Column(scale=4):
+                                CivitaiMetaGrabber_model_from_tag_1 = gr.Textbox(
+                                    label="2.1 URL https://civitai.com/api/v1/models?tag=character (ref above tag name paste here)",
+                                    lines=1,
+                                    value="https://civitai.com/api/v1/models?tag=character",
+                                    placeholder="https://civitai.com/api/v1/models?tag=character",
+                                    info="")
+                            with gr.Column(scale=1):
+                                CivitaiMetaGrabber_model_from_tag_2 = gr.Slider(1, 100, value=3, step=1,
+                                                                                label="2.2 tag count limit, order by used in model descript",
+                                                                                interactive=True)
+                        CivitaiMetaGrabber_model_from_tag_3 = gr.Button("Click grabber list first ")
+
+                        CivitaiMetaGrabber_model_from_tag_4 = gr.Gallery(label="ModelByTag", show_label=True,
+                                                                 columns=3, rows=1,
+                                                                object_fit="contain")
+                        CivitaiMetaGrabber_model_from_tag_5 = gr.Dataframe(
+                            interactive=True,
+                            wrap=True,
+                            label="List Model",
+                            headers=["modelid@verid", "name", "link","download"],
+                            datatype=["str", "str", "str", "str"],
+                            row_count=1,
+                            col_count=(4, "fixed"),
+                        )
                 with gr.Tab("Export/Import"):
                     gr.Markdown("* Share and see how people how to use LLM in SD.\n"
                                 "* Community Share Link: \n"
@@ -832,6 +919,14 @@ class AutoLLM(scripts.Script):
                                 ]
         llm_apiurl_radio.change(self.justRtn, inputs=llm_apiurl_radio, outputs=llm_apiurl)
         llm_api_model_name_radio.change(self.justRtn, inputs=llm_api_model_name_radio, outputs=llm_api_model_name)
+        CivitaiMetaGrabber_tag_list_button_fromTag.click(self.TAG_getter,
+                                                         inputs=[CivitaiMetaGrabber_url_fromTag,
+                                                                 CivitaiMetaGrabber_tag_count_fromTag],
+                                                         outputs=[CivitaiMetaGrabber_history_tag_list_fromTag])
+        CivitaiMetaGrabber_model_from_tag_3.click(self.model_by_TAG_getter,
+                                                  inputs=[CivitaiMetaGrabber_model_from_tag_1,
+                                                          CivitaiMetaGrabber_model_from_tag_2],
+                                                  outputs=[CivitaiMetaGrabber_model_from_tag_4, CivitaiMetaGrabber_model_from_tag_5])
 
         CivitaiMetaGrabber_go_button.click(self.CMG_getter,
                                            inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag,
