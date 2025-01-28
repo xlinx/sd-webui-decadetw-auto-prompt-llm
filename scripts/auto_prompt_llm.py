@@ -627,7 +627,7 @@ class AutoLLM(scripts.Script):
                         row_count=3,
                         col_count=(4, "fixed"),
                     )
-                with gr.Tab("LLM-Text-Chat"):
+                with gr.Tab("LLM-Text-Chat "):
                     llm_loop_enabled = gr.Checkbox(
                         label="2.1 Enable Serial Ask. (each-line as an ask like chat)",
                         value=False)
