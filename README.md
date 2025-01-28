@@ -61,6 +61,11 @@
 * Image will get more details that u never though before.
 * prompt detail is important
 
+## Update List
+
+#### 20250120 
+* add serial chat-like for deep seek R1 model
+![LLM-Text-Chat.png](images/LLM-Text-Chat.png)
 ## Usage
 
 #### LLM-Text

@@ -560,7 +560,7 @@ class AutoLLM(scripts.Script):
 
         with gr.Blocks():
             # gr.Markdown("Blocks")
-            with gr.Accordion(open=False, label="Auto LLM v20241010 - DECADE.TW"):
+            with gr.Accordion(open=False, label="Auto LLM v20250101 - DECADE.TW"):
                 with gr.Tab("LLM-text"):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
