@@ -11,11 +11,11 @@ import re
 import gradio as gr
 import requests
 from modules import scripts
-from modules.api.models import value
-from modules.hashes import cache
+# from modules.api.models import value
+# from modules.hashes import cache
 from modules.processing import StableDiffusionProcessingTxt2Img
 # from modules.script_callbacks import on_ui_tabs
-from modules.shared import opts
+# from modules.shared import opts
 
 log = logging.getLogger("[auto-llm]")
 # log.setLevel(logging.INFO)
@@ -33,7 +33,7 @@ extra_networks_symbol = '\U0001F3B4'  # 🎴
 switch_values_symbol = '\U000021C5'  # ⇅
 restore_progress_symbol = '\U0001F300'  # 🌀
 detect_image_size_symbol = '\U0001F4D0'  # 📐
-
+LAST_LLM_ANSWER=''
 
 # sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 # sys.stderr = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
@@ -120,6 +120,7 @@ def community_import_from_text(*args, **kwargs):
 
 def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, temperature, top_k, top_p, max_token,
                base64_image):
+
     if 'google' in llm_apiurl:
         j = {
             # "system_instruction": {
@@ -150,8 +151,10 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
     else:
         j = {
             'model': f'{llm_api_model_name}',
+            'prompt': f'{ur_prompt}',
             'messages': [
                 {'role': 'system', 'content': f'{system_prompt}'},
+                {'role': 'assistant', 'content': f'{LAST_LLM_ANSWER}'},
                 {'role': 'user', 'content': f'{ur_prompt}'}
             ],
             'max_tokens': max_token,
@@ -178,14 +181,16 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
 
 class AutoLLM(scripts.Script):
     # client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
+
+
     llm_history_array = []
     llm_history_array_eye = []
     webpage_walker_array = []
     llm_sys_vision_template = (
-        "You are an AI prompt word engineer. Use the provided image to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
+        "You are an AI prompt word engineer. Use the provided image to create a beautiful composition. Only the prompt sentence are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
 
     llm_sys_text_template = (
-        "You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt words are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
+        "You are an AI prompt word engineer. Use the provided keywords to create a beautiful composition. Only the prompt sentence are needed, not your feelings. Customize the style, scene, decoration, etc., and be as detailed as possible without endings.")
     llm_sys_translate_template = ("You are a professional and literary Taiwanese translation expert."
                                   "Please follow the following rules to translate into Taiwanese Traditional Chinese:)"
                                   "\n- Only the translated text is returned without any explanation."
@@ -296,7 +301,7 @@ class AutoLLM(scripts.Script):
 
         return self.webpage_walker_array, gallery_arr, CivitaiMetaGrabber_url, int(model_idx), int(model_version_idx)
 
-    def call_llm_mix(self, llm_apikey, json_str_x, llm_apiurl, llm_api_model_name):
+    def call_llm_mix(self,llm_loop_enabled, llm_apikey, json_str_x, llm_apiurl, llm_api_model_name):
 
         result_mix = ''
         url_append = ''
@@ -309,7 +314,10 @@ class AutoLLM(scripts.Script):
                 'x-goog-api-key': f'{llm_apikey}'
             }
         else:
-            llm_apiurl += '/chat/completions'
+            if llm_loop_enabled: #llm_loop_count_slider
+                llm_apiurl += '/chat/completions'
+            else:
+                llm_apiurl += '/completions'
             headers_x = {
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {llm_apikey}',
@@ -327,7 +335,10 @@ class AutoLLM(scripts.Script):
             if 'google' in llm_apiurl:
                 result_mix = completion_json['candidates'][0]['content']['parts'][0]['text']
             else:
-                result_mix = completion_json['choices'][0]['message']['content']
+                if llm_loop_enabled:
+                    result_mix = completion_json['choices'][0]['message']['content']
+                else:
+                    result_mix = completion_json['choices'][0]['text']
             result_mix = result_mix.replace('\n', '')
             log.warning("[Auto-LLM][][]Server Ans=> " + result_mix)
 
@@ -337,6 +348,8 @@ class AutoLLM(scripts.Script):
             result_mix = "[Auto-LLM][Result][Missing LLM-Text]" + e
             log.warning(f"[X][Auto-LLM][][]Missing LLM Server? err={e} response={completion_text}")
         result_mix = result_mix.replace('\n', ' ')
+        global LAST_LLM_ANSWER
+        LAST_LLM_ANSWER = result_mix
         return result_mix
 
     def call_llm_eye_open(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
@@ -357,7 +370,7 @@ class AutoLLM(scripts.Script):
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
-            llm_text_ur_prompt = (llm_text_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
+            llm_text_ur_prompt_eye = (llm_text_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
                                  self.llm_history_array[self.llm_history_array.__len__() - 1][1]
         base64_image = ""
 
@@ -382,7 +395,7 @@ class AutoLLM(scripts.Script):
             json_x0 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
                                  llm_text_tempture_eye, llm_top_k_vision, llm_top_p_vision, llm_text_max_token_eye,
                                  base64_image)
-            result_text = self.call_llm_mix(llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
+            result_text = self.call_llm_mix(False,llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
@@ -393,7 +406,7 @@ class AutoLLM(scripts.Script):
                                              min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
                                          llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
-                    llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
+                    llm_answers_array.append(self.call_llm_mix(False,llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
         except Exception as e:
             e = str(e)
             log.error(f"[][][call_llm_eye_open]Model Error: {e}")
@@ -458,18 +471,17 @@ class AutoLLM(scripts.Script):
             json_x1 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
                                  llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
-            result_text = self.call_llm_mix(llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
+            result_text = self.call_llm_mix(False,llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
-                for i in range(llm_loop_count_slider):
+                for i in range(min(llm_loop_count_slider, len(llm_loop_ur_prompt_array))):
                     json_x2 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt,
-                                         llm_loop_ur_prompt_array[
-                                             min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
+                                         llm_loop_ur_prompt_array[i] ,
                                          llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
-                    llm_answers_array.append(self.call_llm_mix(llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
+                    llm_answers_array.append(self.call_llm_mix(llm_loop_enabled,llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
 
         except Exception as e:
             e = str(e)
@@ -531,7 +543,7 @@ class AutoLLM(scripts.Script):
             e = str(e)
             log.error(f"[][][call_llm_pythonlib]Error: {e}")
             return e
-        result_translate = self.call_llm_mix(llm_apikey, json_x3, llm_apiurl, llm_api_model_name)
+        result_translate = self.call_llm_mix(False, llm_apikey, json_x3, llm_apiurl, llm_api_model_name)
 
         result_translate = result_translate.replace('\n', '').encode("utf-8").decode()
         log.warning(f"[][][call_llm_translate]: {result_translate}")
@@ -548,27 +560,32 @@ class AutoLLM(scripts.Script):
 
         with gr.Blocks():
             # gr.Markdown("Blocks")
-            with gr.Accordion(open=False, label="Auto LLM v20240829"):
+            with gr.Accordion(open=False, label="Auto LLM v20241010 - DECADE.TW"):
                 with gr.Tab("LLM-text"):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
                     llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=False)
+                    llm_ans_as_assistant = gr.Checkbox(label=" Enable LLM-Answer as LLM-Assistant(for deepseek G1)", value=False)
 
                     llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request",
                                                            value=False)
 
                     with gr.Row():
                         with gr.Column(scale=1):
-                            llm_text_system_prompt = gr.Textbox(label="1. [LLM-System-Prompt]", lines=5,
+                            llm_text_system_prompt = gr.Textbox(label="1.[LLM-System-Prompt]", lines=5,
                                                                 value=self.llm_sys_text_template,
                                                                 placeholder=self.llm_sys_text_template
                                                                 )
                             llm_text_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=8,
                                                             value="A superstar on stage.",
-                                                            placeholder="A superstar on stage.")
+
+                                                         placeholder="A superstar on stage.")
+
+
+
                         with gr.Column(scale=4):
-                            llm_text_tempture = gr.Slider(-2, 2, value=0.5, step=0.01,
+                            llm_text_tempture = gr.Slider(-2, 2, value=0.7, step=0.01,
                                                           label="3.1 LLM temperature", elem_id="llm_text_tempture",
                                                           interactive=True,
                                                           #hint='temperature (Deterministic) | (More creative)'
@@ -587,8 +604,8 @@ class AutoLLM(scripts.Script):
                                     #hint=' (nucleus): The cumulative probability cutoff for token selection. Lower values mean sampling from a smaller, more top-weighted nucleus.'
                                 )
 
-                            llm_text_max_token = gr.Slider(5, 5000, value=150, step=5,
-                                                           label="3.4 LLM Max length(tokens)")
+                            llm_text_max_token = gr.Slider(5, 2000, value=150, step=10,
+                                                           label="3.4LLM Max length(tokens)")
                             self.llm_llm_answer = gr.Textbox(
                                 # inputs=[llm_ans_state['llm-text-ans']],
                                 show_copy_button=True, interactive=True,
@@ -598,7 +615,9 @@ class AutoLLM(scripts.Script):
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
                                 llm_sendto_img2img = gr.Button("send to img2img")
 
-                    llm_button = gr.Button("Call LLM above")
+
+
+                    llm_button = gr.Button("Test LLM above")
                     llm_history = gr.Dataframe(
                         interactive=True,
                         wrap=True,
@@ -608,7 +627,21 @@ class AutoLLM(scripts.Script):
                         row_count=3,
                         col_count=(4, "fixed"),
                     )
+                with gr.Tab("LLM-Text-Chat"):
+                    llm_loop_enabled = gr.Checkbox(
+                        label="2.1 Enable Serial Ask. (each-line as an ask like chat)",
+                        value=False)
+                    gr.Markdown("* enable=> /v1/chat/completions\n"
+                                "* disable=> /v1/completions\n"
+                                "* (ex:its useful for step-step model. ex: deepseek.R1)\n")
 
+                    llm_loop_count_slider = gr.Slider(1, 10, value=2, step=1,
+                                                      label="2.2 Enable how many lines")
+                    llm_loop_ur_prompt = gr.Textbox(
+                        label="2.3 each line as an chat-like",
+                        lines=3,
+                        value="when 5y old\nwhen 25y old\nwhen 55y old",
+                        placeholder="red\nyellow\nblue")
                 with gr.Tab("LLM-vision"):
                     llm_is_open_eye = gr.Checkbox(label="Enable LLM-vision👀", value=False)
                     llm_is_open_eye_last_one_image = gr.Checkbox(
@@ -674,21 +707,14 @@ class AutoLLM(scripts.Script):
                                 "* function discussions:  https://github.com/xlinx/sd-webui-decadetw-auto-prompt-llm/discussions/14 \n"
                                 )
                     llm_recursive_use = gr.Checkbox(
-                        label="0. LLM-ask-LLM/Recursive-prompt. (Prompt from last LLM-Ans)🌀",
+                        label="1. LLM-ask-LLM/Recursive-prompt. (Prompt from last LLM-Ans)🌀",
                         value=False)
                     llm_loop_each_append = gr.Checkbox(
-                        label="1. Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append each LLM-Answer ]",
+                        label="1. Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append follow line each to LLM ]",
                         value=False)
-                    llm_loop_enabled = gr.Checkbox(label="2.1 Append follow textarea each-line as feature to prompt",
-                                                   value=False)
 
-                    llm_loop_count_slider = gr.Slider(1, 5, value=1, step=1,
-                                                      label="2.2 LLM-Loop Count (1=> append 1 more times LLM-Text. calling LLM total is 2)")
-                    llm_loop_ur_prompt = gr.Textbox(
-                        label="2.3 line by line append to every loop",
-                        lines=3,
-                        value="red\nyellow\nblue",
-                        placeholder="red\nyellow\nblue")
+
+
                 with gr.Tab("Setup"):
                     gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
                                 "* API-URI: ollama  => http://localhost:11434/v1 \n"
@@ -725,7 +751,7 @@ class AutoLLM(scripts.Script):
                             # llm_before_action_cmd_feedback_vision = gr.Checkbox(label="Capture CMD return image path to LLM-vision",value=False)
                             llm_before_action_cmd = gr.Textbox(
                                 label="4.1 Before LLM API call action",
-                                lines=1,
+                                lines=3,
                                 value="",
                                 placeholder="""run getStoryLine.bat | sh myStoryBook.sh'""",
                                 info="call ur script(.bat, .sh) ")
@@ -744,7 +770,7 @@ class AutoLLM(scripts.Script):
                             #     value=False, enable=False)
                             llm_post_action_cmd = gr.Textbox(
                                 label="4.2 After LLM API call action ",
-                                lines=1,
+                                lines=3,
                                 value="",
                                 placeholder="""curl http://localhost:11434/api/generate -d '{"keep_alive": 0}'""",
                                 info="call ur script(.bat, .sh) ")
@@ -778,7 +804,7 @@ class AutoLLM(scripts.Script):
                             label="Remove Lora tag in prompt (any char inside <***>)", value=True)
 
                         CivitaiMetaGrabber_url = gr.Textbox(
-                            label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 )",
+                            label="1 URL or Civitai-AIR ( https://civitai.com/api/v1/images?modelId=85691 ) or ( urn:air:sd1:checkpoint:civitai:85691@93152 ) or ( urn:air:flux1:lora:civitai:820148@917106)",
                             lines=1,
                             value="https://civitai.com/api/v1/images?modelId=85691",
                             placeholder="https://civitai.com/api/v1/images?modelId=85691",
@@ -819,7 +845,7 @@ class AutoLLM(scripts.Script):
                             row_count=3,
                             col_count=(4, "fixed"),
                         )
-                    with gr.Tab("analysis model by Tag"):
+                    with gr.Tab("pick Model by Tag"):
                         gr.Markdown("- Quick walk through all model by tag in Civitai\n" )
 
                         with gr.Row():
@@ -983,6 +1009,8 @@ class AutoLLM(scripts.Script):
         log.warning(f"_____[AUTO_LLM][getRandomPrompt][]CivitaiMetaGrabber={g_result}")
 
         return g_result
+    def process_batch(self, p: StableDiffusionProcessingTxt2Img, *args):
+        global args_dict
 
     def process(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
