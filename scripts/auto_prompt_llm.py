@@ -629,6 +629,9 @@ class AutoLLM(scripts.Script):
                     llm_loop_enabled = gr.Checkbox(
                         label="2.1 Enable Serial Ask. (each-line as an ask like chat)",
                         value=False)
+                    llm_loop_also_generate = gr.Checkbox(
+                        label="2.2 also send to generate image(not work yet)",
+                        value=False)
                     gr.Markdown("* enable=> /v1/chat/completions\n"
                                 "* disable=> /v1/completions\n"
                                 "* (ex:its useful for step-step model. ex: deepseek.R1)\n")
