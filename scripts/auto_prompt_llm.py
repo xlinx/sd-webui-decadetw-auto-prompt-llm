@@ -507,7 +507,7 @@ class AutoLLM(scripts.Script):
                                                        llm_top_p_vision, llm_top_k_vision)
             self.llm_history_array.append([result, llm_text_system_prompt, llm_text_ur_prompt, result_translate])
 
-        if len(self.llm_history_array) > 10:
+        if len(self.llm_history_array) > 20:
             self.llm_history_array.remove(self.llm_history_array[0])
 
         # print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
