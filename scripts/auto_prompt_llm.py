@@ -14,6 +14,7 @@ from modules import scripts
 # from modules.api.models import value
 # from modules.hashes import cache
 from modules.processing import StableDiffusionProcessingTxt2Img
+
 # from modules.script_callbacks import on_ui_tabs
 # from modules.shared import opts
 
@@ -33,7 +34,8 @@ extra_networks_symbol = '\U0001F3B4'  # 🎴
 switch_values_symbol = '\U000021C5'  # ⇅
 restore_progress_symbol = '\U0001F300'  # 🌀
 detect_image_size_symbol = '\U0001F4D0'  # 📐
-LAST_LLM_ANSWER=''
+LAST_LLM_ANSWER = ''
+
 
 # sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 # sys.stderr = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
@@ -120,7 +122,6 @@ def community_import_from_text(*args, **kwargs):
 
 def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, temperature, top_k, top_p, max_token,
                base64_image):
-
     if 'google' in llm_apiurl:
         j = {
             # "system_instruction": {
@@ -182,7 +183,6 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
 class AutoLLM(scripts.Script):
     # client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
 
-
     llm_history_array = []
     llm_history_array_eye = []
     webpage_walker_array = []
@@ -221,7 +221,7 @@ class AutoLLM(scripts.Script):
         headers = {'user-agent': 'Mozilla/5.0'}
         completion = requests.get(f"{url}&limit={tag_count}", headers=headers).json()
         gallery_arr = []
-        table_arr=[]
+        table_arr = []
         for index, ele in enumerate(completion['items']):
             try:
                 x1 = ele['modelVersions'][0]['images'][0]['url'] or ""
@@ -232,8 +232,8 @@ class AutoLLM(scripts.Script):
             downloadCount = ele['stats']['downloadCount'] or ""
             x3 = ele['modelVersions'][0]['id'] or ""
             table_arr.append((f"{x2}@{x3}", name, f"https://civitai.com/models/{x2}", downloadCount))
-            gallery_arr.append((x1, f"{x2}@{x3} {name}")) #urn:air:flux1:checkpoint:civitai:618692@691639
-        return [gallery_arr,table_arr]
+            gallery_arr.append((x1, f"{x2}@{x3} {name}"))  #urn:air:flux1:checkpoint:civitai:618692@691639
+        return [gallery_arr, table_arr]
 
     def TAG_getter(self, url, tag_count):
         headers = {'user-agent': 'Mozilla/5.0'}
@@ -301,7 +301,7 @@ class AutoLLM(scripts.Script):
 
         return self.webpage_walker_array, gallery_arr, CivitaiMetaGrabber_url, int(model_idx), int(model_version_idx)
 
-    def call_llm_mix(self,llm_loop_enabled, llm_apikey, json_str_x, llm_apiurl, llm_api_model_name):
+    def call_llm_mix(self, llm_loop_enabled, llm_apikey, json_str_x, llm_apiurl, llm_api_model_name):
 
         result_mix = ''
         url_append = ''
@@ -314,7 +314,7 @@ class AutoLLM(scripts.Script):
                 'x-goog-api-key': f'{llm_apikey}'
             }
         else:
-            if llm_loop_enabled: #llm_loop_count_slider
+            if llm_loop_enabled:  #llm_loop_count_slider
                 llm_apiurl += '/chat/completions'
             else:
                 llm_apiurl += '/completions'
@@ -371,7 +371,7 @@ class AutoLLM(scripts.Script):
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
             llm_text_ur_prompt_eye = (llm_text_ur_prompt if llm_keep_your_prompt_use else "") + " " + \
-                                 self.llm_history_array[self.llm_history_array.__len__() - 1][1]
+                                     self.llm_history_array[self.llm_history_array.__len__() - 1][1]
         base64_image = ""
 
         try:
@@ -395,7 +395,7 @@ class AutoLLM(scripts.Script):
             json_x0 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt_eye, llm_text_ur_prompt_eye,
                                  llm_text_tempture_eye, llm_top_k_vision, llm_top_p_vision, llm_text_max_token_eye,
                                  base64_image)
-            result_text = self.call_llm_mix(False,llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
+            result_text = self.call_llm_mix(False, llm_apikey, json_x0, llm_apiurl, llm_api_model_name)
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
@@ -406,7 +406,8 @@ class AutoLLM(scripts.Script):
                                              min(len(llm_loop_ur_prompt_array) - 1, i)] + result_text,
                                          llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
-                    llm_answers_array.append(self.call_llm_mix(False,llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
+                    llm_answers_array.append(
+                        self.call_llm_mix(False, llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
         except Exception as e:
             e = str(e)
             log.error(f"[][][call_llm_eye_open]Model Error: {e}")
@@ -471,18 +472,20 @@ class AutoLLM(scripts.Script):
             json_x1 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt, llm_text_ur_prompt,
                                  llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
-            result_text = self.call_llm_mix(False,llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
+            result_text = self.call_llm_mix(False, llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
+            self.llm_history_array.append([result_text, llm_text_system_prompt, llm_text_ur_prompt,''])
+
             llm_answers_array = []
             if llm_loop_enabled:
                 llm_loop_ur_prompt_array = llm_loop_ur_prompt.split('\n')
 
                 for i in range(min(llm_loop_count_slider, len(llm_loop_ur_prompt_array))):
                     json_x2 = getReqJson(llm_apiurl, llm_api_model_name, llm_text_system_prompt,
-                                         llm_loop_ur_prompt_array[i] ,
+                                         llm_loop_ur_prompt_array[i],
                                          llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
-
-                    llm_answers_array.append(self.call_llm_mix(llm_loop_enabled,llm_apikey, json_x2, llm_apiurl, llm_api_model_name))
-
+                    r = self.call_llm_mix(llm_loop_enabled, llm_apikey, json_x2, llm_apiurl, llm_api_model_name)
+                    llm_answers_array.append(r)
+                    self.llm_history_array.append([r, llm_text_system_prompt, llm_loop_ur_prompt_array[i], ''])
         except Exception as e:
             e = str(e)
             self.llm_history_array.append([e, e, e, e])
@@ -502,9 +505,9 @@ class AutoLLM(scripts.Script):
                                                        llm_text_max_token_eye,
                                                        llm_text_tempture_eye,
                                                        llm_top_p_vision, llm_top_k_vision)
+            self.llm_history_array.append([result, llm_text_system_prompt, llm_text_ur_prompt, result_translate])
 
-        self.llm_history_array.append([result, llm_text_ur_prompt, llm_text_system_prompt, result_translate])
-        if len(self.llm_history_array) > 3:
+        if len(self.llm_history_array) > 10:
             self.llm_history_array.remove(self.llm_history_array[0])
 
         # print("[][auto-llm][call_llm_pythonlib] ", result, result_translate)
@@ -566,7 +569,6 @@ class AutoLLM(scripts.Script):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
                     llm_is_enabled = gr.Checkbox(label=" Enable LLM-Answer to SD-prompt", value=False)
-                    llm_ans_as_assistant = gr.Checkbox(label=" Enable LLM-Answer as LLM-Assistant(for deepseek G1)", value=False)
 
                     llm_keep_your_prompt_use = gr.Checkbox(label=" Keep LLM-Your-Prompt ahead each request",
                                                            value=False)
@@ -580,9 +582,7 @@ class AutoLLM(scripts.Script):
                             llm_text_ur_prompt = gr.Textbox(label="2. [LLM-Your-Prompt]", lines=8,
                                                             value="A superstar on stage.",
 
-                                                         placeholder="A superstar on stage.")
-
-
+                                                            placeholder="A superstar on stage.")
 
                         with gr.Column(scale=4):
                             llm_text_tempture = gr.Slider(-2, 2, value=0.7, step=0.01,
@@ -615,8 +615,6 @@ class AutoLLM(scripts.Script):
                                 llm_sendto_txt2img = gr.Button("send to txt2img")
                                 llm_sendto_img2img = gr.Button("send to img2img")
 
-
-
                     llm_button = gr.Button("Test LLM above")
                     llm_history = gr.Dataframe(
                         interactive=True,
@@ -642,6 +640,16 @@ class AutoLLM(scripts.Script):
                         lines=3,
                         value="when 5y old\nwhen 25y old\nwhen 55y old",
                         placeholder="red\nyellow\nblue")
+                    llm_button_chat = gr.Button("Test LLM above")
+                    llm_history_chat = gr.Dataframe(
+                        interactive=True,
+                        wrap=True,
+                        label="History/StoryBoard",
+                        headers=["llm_answer", "system_prompt", "ur_prompt", "result_translate"],
+                        datatype=["str", "str", "str", "str"],
+                        row_count=3,
+                        col_count=(4, "fixed"),
+                    )
                 with gr.Tab("LLM-vision"):
                     llm_is_open_eye = gr.Checkbox(label="Enable LLM-vision👀", value=False)
                     llm_is_open_eye_last_one_image = gr.Checkbox(
@@ -712,8 +720,6 @@ class AutoLLM(scripts.Script):
                     llm_loop_each_append = gr.Checkbox(
                         label="1. Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append follow line each to LLM ]",
                         value=False)
-
-
 
                 with gr.Tab("Setup"):
                     gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
@@ -846,7 +852,7 @@ class AutoLLM(scripts.Script):
                             col_count=(4, "fixed"),
                         )
                     with gr.Tab("pick Model by Tag"):
-                        gr.Markdown("- Quick walk through all model by tag in Civitai\n" )
+                        gr.Markdown("- Quick walk through all model by tag in Civitai\n")
 
                         with gr.Row():
                             with gr.Column(scale=4):
@@ -886,13 +892,13 @@ class AutoLLM(scripts.Script):
                         CivitaiMetaGrabber_model_from_tag_3 = gr.Button("Click grabber list first ")
 
                         CivitaiMetaGrabber_model_from_tag_4 = gr.Gallery(label="ModelByTag", show_label=True,
-                                                                 columns=3, rows=1,
-                                                                object_fit="contain")
+                                                                         columns=3, rows=1,
+                                                                         object_fit="contain")
                         CivitaiMetaGrabber_model_from_tag_5 = gr.Dataframe(
                             interactive=True,
                             wrap=True,
                             label="List Model",
-                            headers=["modelid@verid", "name", "link","download"],
+                            headers=["modelid@verid", "name", "link", "download"],
                             datatype=["str", "str", "str", "str"],
                             row_count=1,
                             col_count=(4, "fixed"),
@@ -952,7 +958,8 @@ class AutoLLM(scripts.Script):
         CivitaiMetaGrabber_model_from_tag_3.click(self.model_by_TAG_getter,
                                                   inputs=[CivitaiMetaGrabber_model_from_tag_1,
                                                           CivitaiMetaGrabber_model_from_tag_2],
-                                                  outputs=[CivitaiMetaGrabber_model_from_tag_4, CivitaiMetaGrabber_model_from_tag_5])
+                                                  outputs=[CivitaiMetaGrabber_model_from_tag_4,
+                                                           CivitaiMetaGrabber_model_from_tag_5])
 
         CivitaiMetaGrabber_go_button.click(self.CMG_getter,
                                            inputs=[CivitaiMetaGrabber_url, CivitaiMetaGrabber_target_tag,
@@ -967,12 +974,12 @@ class AutoLLM(scripts.Script):
         community_import_btn.click(community_import_from_text,
                                    inputs=community_text,
                                    outputs=all_var_val_wo_image)
-        llm_button_eye.click(self.call_llm_eye_open,
-                             inputs=all_var_val,
+        llm_button_eye.click(self.call_llm_eye_open, inputs=all_var_val,
                              outputs=[llm_llm_answer_eye, llm_history_eye])
-        llm_button.click(self.call_llm_text,
-                         inputs=all_var_val,
+        llm_button.click(self.call_llm_text, inputs=all_var_val,
                          outputs=[self.llm_llm_answer, llm_history])
+        llm_button_chat.click(self.call_llm_text, inputs=all_var_val,
+                              outputs=[self.llm_llm_answer,llm_history_chat])
 
         llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}",
                                  inputs=[self.llm_llm_answer])
@@ -1009,6 +1016,7 @@ class AutoLLM(scripts.Script):
         log.warning(f"_____[AUTO_LLM][getRandomPrompt][]CivitaiMetaGrabber={g_result}")
 
         return g_result
+
     def process_batch(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
 
