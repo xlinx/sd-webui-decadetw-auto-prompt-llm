@@ -6,6 +6,7 @@ import enum
 # import pprint
 import random
 import subprocess
+import time
 from io import BytesIO
 import re
 import gradio as gr
@@ -180,6 +181,56 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
     return j
 
 
+def slow_echo(message, history):
+    for i in range(len(message)):
+        time.sleep(0.05)
+        yield "You typed: " + message[: i + 1]
+
+
+def userX(user_message, history: list):
+    return "", history + [{"role": "user", "content": user_message}]
+
+
+def botX(history: list):
+    bot_message = random.choice(["[simulate] How are you?", "[simulate] I love you", "[simulate] I'm very hungry"])
+    history.append({"role": "assistant", "content": ""})
+    for character in bot_message:
+        history[-1]['content'] += character
+        time.sleep(0.05)
+        yield history
+
+
+def model_by_TAG_getter(url, tag_count):
+    headers = {'user-agent': 'Mozilla/5.0'}
+    completion = requests.get(f"{url}&limit={tag_count}", headers=headers).json()
+    gallery_arr = []
+    table_arr = []
+    for index, ele in enumerate(completion['items']):
+        try:
+            x1 = ele['modelVersions'][0]['images'][0]['url'] or ""
+        except IndexError:
+            x1 = "https://wiki.civitai.com/images/thumb/1/17/Logo_%28Light%29.png/300px-Logo_%28Light%29.png"
+        x2 = ele['id'] or ""
+        name = ele['name']
+        downloadCount = ele['stats']['downloadCount'] or ""
+        x3 = ele['modelVersions'][0]['id'] or ""
+        table_arr.append((f"{x2}@{x3}", name, f"https://civitai.com/models/{x2}", downloadCount))
+        gallery_arr.append((x1, f"{x2}@{x3} {name}"))  #urn:air:flux1:checkpoint:civitai:618692@691639
+    return [gallery_arr, table_arr]
+
+
+def TAG_getter(url, tag_count):
+    headers = {'user-agent': 'Mozilla/5.0'}
+    completion = requests.get(f"{url}?limit={tag_count}", headers=headers).json()
+    tag_arr = []
+    for index, ele in enumerate(completion['items']):
+        x1 = ele['name'] or ""
+        x2 = ele['modelCount'] or ""
+        x3 = ele['link'] or ""
+        tag_arr.append((x1, x2, x3))
+    return tag_arr
+
+
 class AutoLLM(scripts.Script):
     # client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
 
@@ -204,6 +255,12 @@ class AutoLLM(scripts.Script):
     def __init__(self) -> None:
         self.llm_llm_answer = None
         self.llm_ans_state = None
+        self.chat_history = [
+            {"role": "assistant", "content": "according deepseek.R1 and openAI.deepReach"},
+            {"role": "assistant", "content": "instruction of LLM style seems nice use"},
+            {"role": "assistant", "content": "therefore, let talk to LLM first "},
+            {"role": "assistant", "content": "the generate use 2.3 each line keyword"}
+        ]
         self.YOU_LLM = "A superstar on stage."
         super().__init__()
 
@@ -216,35 +273,6 @@ class AutoLLM(scripts.Script):
     # def check_api_uri(self, llm_apiurl, llm_apikey):
     #     if self.client.base_url != llm_apiurl or self.client.api_key != llm_apikey:
     #         self.client = OpenAI(base_url=llm_apiurl, api_key=llm_apikey)
-
-    def model_by_TAG_getter(self, url, tag_count):
-        headers = {'user-agent': 'Mozilla/5.0'}
-        completion = requests.get(f"{url}&limit={tag_count}", headers=headers).json()
-        gallery_arr = []
-        table_arr = []
-        for index, ele in enumerate(completion['items']):
-            try:
-                x1 = ele['modelVersions'][0]['images'][0]['url'] or ""
-            except IndexError:
-                x1 = "https://wiki.civitai.com/images/thumb/1/17/Logo_%28Light%29.png/300px-Logo_%28Light%29.png"
-            x2 = ele['id'] or ""
-            name = ele['name']
-            downloadCount = ele['stats']['downloadCount'] or ""
-            x3 = ele['modelVersions'][0]['id'] or ""
-            table_arr.append((f"{x2}@{x3}", name, f"https://civitai.com/models/{x2}", downloadCount))
-            gallery_arr.append((x1, f"{x2}@{x3} {name}"))  #urn:air:flux1:checkpoint:civitai:618692@691639
-        return [gallery_arr, table_arr]
-
-    def TAG_getter(self, url, tag_count):
-        headers = {'user-agent': 'Mozilla/5.0'}
-        completion = requests.get(f"{url}?limit={tag_count}", headers=headers).json()
-        tag_arr = []
-        for index, ele in enumerate(completion['items']):
-            x1 = ele['name'] or ""
-            x2 = ele['modelCount'] or ""
-            x3 = ele['link'] or ""
-            tag_arr.append((x1, x2, x3))
-        return tag_arr
 
     def CMG_getter(self, CivitaiMetaGrabber_url: str, CivitaiMetaGrabber_target_tag, CivitaiMetaGrabber_page,
                    CivitaiMetaGrabber_limit,
@@ -473,7 +501,7 @@ class AutoLLM(scripts.Script):
                                  llm_text_tempture, llm_top_k_text, llm_top_p_text, llm_text_max_token, None)
 
             result_text = self.call_llm_mix(False, llm_apikey, json_x1, llm_apiurl, llm_api_model_name)
-            self.llm_history_array.append([result_text, llm_text_system_prompt, llm_text_ur_prompt,''])
+            self.llm_history_array.append([result_text, llm_text_system_prompt, llm_text_ur_prompt, ''])
 
             llm_answers_array = []
             if llm_loop_enabled:
@@ -639,10 +667,29 @@ class AutoLLM(scripts.Script):
                     llm_loop_count_slider = gr.Slider(1, 10, value=2, step=1,
                                                       label="2.2 Enable how many lines")
                     llm_loop_ur_prompt = gr.Textbox(
-                        label="2.3 each line as an chat-like",
+                        label="2.3 when generate; loop chat each line",
                         lines=3,
                         value="when 5y old\nwhen 25y old\nwhen 55y old",
                         placeholder="red\nyellow\nblue")
+                    llm_loop_ur_chat = gr.Chatbot(self.chat_history,type="messages")
+                    llm_loop_ur_msg = gr.Textbox(
+                        label="2.4 Chat to LLM ",
+                        lines=1,
+                        placeholder="talk to LLM first, then use 2.3 list")
+                    llm_loop_ur_clear = gr.Button("Clear Chat List")
+                    llm_loop_ur_send = gr.Button("Send Chat")
+                    llm_loop_ur_msg.submit(userX,
+                                           [llm_loop_ur_msg, llm_loop_ur_chat],
+                                           [llm_loop_ur_msg, llm_loop_ur_chat], queue=False).then(
+                        botX, llm_loop_ur_chat, llm_loop_ur_chat
+                    )
+                    llm_loop_ur_send.click(userX,
+                                           [llm_loop_ur_msg, llm_loop_ur_chat],
+                                           [llm_loop_ur_msg, llm_loop_ur_chat], queue=False).then(
+                        botX, llm_loop_ur_chat, llm_loop_ur_chat
+                    )
+                    llm_loop_ur_clear.click(lambda: None, None, llm_loop_ur_chat, queue=False)
+
                     llm_button_chat = gr.Button("Test LLM above")
                     llm_history_chat = gr.Dataframe(
                         interactive=True,
@@ -954,11 +1001,11 @@ class AutoLLM(scripts.Script):
                                 ]
         llm_apiurl_radio.change(self.justRtn, inputs=llm_apiurl_radio, outputs=llm_apiurl)
         llm_api_model_name_radio.change(self.justRtn, inputs=llm_api_model_name_radio, outputs=llm_api_model_name)
-        CivitaiMetaGrabber_tag_list_button_fromTag.click(self.TAG_getter,
+        CivitaiMetaGrabber_tag_list_button_fromTag.click(TAG_getter,
                                                          inputs=[CivitaiMetaGrabber_url_fromTag,
                                                                  CivitaiMetaGrabber_tag_count_fromTag],
                                                          outputs=[CivitaiMetaGrabber_history_tag_list_fromTag])
-        CivitaiMetaGrabber_model_from_tag_3.click(self.model_by_TAG_getter,
+        CivitaiMetaGrabber_model_from_tag_3.click(model_by_TAG_getter,
                                                   inputs=[CivitaiMetaGrabber_model_from_tag_1,
                                                           CivitaiMetaGrabber_model_from_tag_2],
                                                   outputs=[CivitaiMetaGrabber_model_from_tag_4,
@@ -982,7 +1029,7 @@ class AutoLLM(scripts.Script):
         llm_button.click(self.call_llm_text, inputs=all_var_val,
                          outputs=[self.llm_llm_answer, llm_history])
         llm_button_chat.click(self.call_llm_text, inputs=all_var_val,
-                              outputs=[self.llm_llm_answer,llm_history_chat])
+                              outputs=[self.llm_llm_answer, llm_history_chat])
 
         llm_sendto_txt2img.click(fn=None, _js="function(prompt){sendPromptAutoPromptLLM('txt2img', prompt)}",
                                  inputs=[self.llm_llm_answer])
@@ -1020,8 +1067,8 @@ class AutoLLM(scripts.Script):
 
         return g_result
 
-    def process_batch(self, p: StableDiffusionProcessingTxt2Img, *args):
-        global args_dict
+    # def process_batch(self, p: StableDiffusionProcessingTxt2Img, *args):
+    #     global args_dict
 
     def process(self, p: StableDiffusionProcessingTxt2Img, *args):
         global args_dict
