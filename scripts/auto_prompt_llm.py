@@ -1,4 +1,5 @@
 import base64
+import itertools
 import json
 import logging
 import os
@@ -11,6 +12,8 @@ from io import BytesIO
 import re
 import gradio as gr
 import requests
+from pyexpat.errors import messages
+
 from modules import scripts
 # from modules.api.models import value
 # from modules.hashes import cache
@@ -181,23 +184,8 @@ def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, tempera
     return j
 
 
-def slow_echo(message, history):
-    for i in range(len(message)):
-        time.sleep(0.05)
-        yield "You typed: " + message[: i + 1]
-
-
 def userX(user_message, history: list):
     return "", history + [{"role": "user", "content": user_message}]
-
-
-def botX(history: list):
-    bot_message = random.choice(["[simulate] How are you?", "[simulate] I love you", "[simulate] I'm very hungry"])
-    history.append({"role": "assistant", "content": ""})
-    for character in bot_message:
-        history[-1]['content'] += character
-        time.sleep(0.05)
-        yield history
 
 
 def model_by_TAG_getter(url, tag_count):
@@ -229,6 +217,30 @@ def TAG_getter(url, tag_count):
         x3 = ele['link'] or ""
         tag_arr.append((x1, x2, x3))
     return tag_arr
+
+
+def chat_with_lm_studio(message, history):
+    # Prepare the payload for the API request
+    print()
+    payload = {
+        "messages": history + [{"role": "user", "content": message}],
+        "stream": True  # Enable streaming
+    }
+
+    # Send the request to LM Studio API
+    response = requests.post(
+        'http://localhost:1234/v1/chat/completions/',
+        json=payload,
+        stream=True
+    )
+
+    # Stream the response from LM Studio
+    full_response = ""
+    for chunk in response.iter_content(chunk_size=None):
+        if chunk:
+            chunk_str = chunk.decode("utf-8")
+            full_response += chunk_str
+            yield full_response
 
 
 class AutoLLM(scripts.Script):
@@ -580,6 +592,8 @@ class AutoLLM(scripts.Script):
         log.warning(f"[][][call_llm_translate]: {result_translate}")
         return result_translate
 
+    # Function to call the LM Studio API
+
     def ui(self, is_img2img):
         # print("\n\n[][Init-UI][sd-webui-prompt-auto-llm]: " + str(is_img2img) + "\n\n")
         # log.error(f'[][][][][][Init-UI][sd-webui-prompt-auto-llm]: " + str({is_img2img})')
@@ -591,8 +605,8 @@ class AutoLLM(scripts.Script):
 
         with gr.Blocks():
             # gr.Markdown("Blocks")
-            with gr.Accordion(open=False, label="Auto LLM v20250101 - DECADE.TW"):
-                with gr.Tab("LLM-text"):
+            with gr.Accordion(open=True, label="Auto LLM v20250101 - DECADE.TW"):
+                with gr.Tab(label="LLM-text", default=True):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
                                 "* Story board mode")
@@ -667,28 +681,79 @@ class AutoLLM(scripts.Script):
                     llm_loop_count_slider = gr.Slider(1, 10, value=2, step=1,
                                                       label="2.2 Enable how many lines")
                     llm_loop_ur_prompt = gr.Textbox(
-                        label="2.3 when generate; loop chat each line",
+                        label="2.3.2 After per-chat; loop each line to generate",
                         lines=3,
                         value="when 5y old\nwhen 25y old\nwhen 55y old",
                         placeholder="red\nyellow\nblue")
-                    llm_loop_ur_chat = gr.Chatbot(self.chat_history,type="messages")
-                    llm_loop_ur_msg = gr.Textbox(
-                        label="2.4 Chat to LLM ",
-                        lines=1,
-                        placeholder="talk to LLM first, then use 2.3 list")
-                    llm_loop_ur_clear = gr.Button("Clear Chat List")
-                    llm_loop_ur_send = gr.Button("Send Chat")
-                    llm_loop_ur_msg.submit(userX,
-                                           [llm_loop_ur_msg, llm_loop_ur_chat],
-                                           [llm_loop_ur_msg, llm_loop_ur_chat], queue=False).then(
-                        botX, llm_loop_ur_chat, llm_loop_ur_chat
+                    # llm_loop_chatbot = gr.Chatbot(self.chat_history,type="messages")
+                    gr.ChatInterface(
+                        fn=lambda message, history: (
+                            # Combine system message, history, and the new user message
+                            messageS := [{
+                                "role": "system",
+                                "content": llm_text_system_prompt.value
+                            }] + [
+                                    {
+                                        "role": "user" if index % 2 == 0 else "assistant",
+                                        "content": list(itertools.chain(*history))[index]
+                                    } for index in range(len(list(itertools.chain(*history)))) # ... finally flatten the history 2d array in lambda ... by xlinx
+                            ] +
+                                        [{"role": "user", "content": message}],
+                            # Prepare the payload for the API request
+                            payload := {
+                                "messages": messageS,
+                                'max_tokens': llm_text_max_token.value,
+                                'temperature': llm_text_tempture.value,
+                                'top_p': llm_top_p_text.value,
+                                'top_k': llm_top_k_text.value,
+                                "stream": False  # Enable streaming
+                            },
+                            headers_x := {
+                                'Content-Type': 'application/json',
+                                'x-goog-api-key': f'{llm_apikey.value}'
+                            },
+                            # Send the request to LM Studio API
+                            response := requests.post(
+                                # llm_apiurl.value,
+                                'http://localhost:1234/v1/chat/completions/',
+                                headers=headers_x,
+                                json=payload
+                            ),
+                            # Stream the response from LM Studio
+                            # full_response := "", [response.json()["choices"][0]["message"]["content"]]
+                            full_response := response.json()["choices"][0]["message"]["content"]
+                        )[-1],
+                        # multimodal=True,
+                        # type="messages",
+                        # textbox=gr.Textbox(label="textBoxLabel",value="textbox value"),
+                        # chatbot=llm_loop_chatbot
                     )
-                    llm_loop_ur_send.click(userX,
-                                           [llm_loop_ur_msg, llm_loop_ur_chat],
-                                           [llm_loop_ur_msg, llm_loop_ur_chat], queue=False).then(
-                        botX, llm_loop_ur_chat, llm_loop_ur_chat
-                    )
-                    llm_loop_ur_clear.click(lambda: None, None, llm_loop_ur_chat, queue=False)
+
+                    # llm_loop_ur_clear = gr.Button("Clear Chat List")
+
+                    # demo = gr.Interface(fn=self.botX, inputs="textbox", outputs="textbox")
+                    # llm_loop_ur_chat = gr.ChatInterface(self.botX, type="messages", autofocus=False)
+
+                    # with gr.Row():
+                    #     with gr.Column(scale=1,min_width=300):
+                    #         llm_loop_ur_msg = gr.Textbox(
+                    #             submit_btn='True',
+                    #             label="2.4 Chat to LLM ",
+                    #             lines=1,
+                    #             placeholder="talk to LLM first, then use 2.3 list")
+                    #     with gr.Column(scale=1):
+                    #         llm_loop_ur_send = gr.Button(value="Send Chat",size="sm")
+                    # llm_loop_ur_msg.submit(userX,
+                    #                        [llm_loop_ur_msg, llm_loop_ur_chat],
+                    #                        [llm_loop_ur_msg, llm_loop_ur_chat], queue=False).then(
+                    #     self.botX, llm_loop_ur_chat, llm_loop_ur_chat
+                    # )
+                    # llm_loop_ur_send.click(userX,
+                    #                        [llm_loop_ur_msg, llm_loop_ur_chat],
+                    #                        [llm_loop_ur_msg, llm_loop_ur_chat], queue=False).then(
+                    #     self.botX, llm_loop_ur_chat, llm_loop_ur_chat
+                    # )
+                    # llm_loop_ur_clear.click(lambda: None, None, llm_loop_ur_chat, queue=False)
 
                     llm_button_chat = gr.Button("Test LLM above")
                     llm_history_chat = gr.Dataframe(

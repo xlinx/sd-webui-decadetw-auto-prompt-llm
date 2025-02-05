@@ -45,7 +45,7 @@
 </a>
 </p>
 
-#### Update Log
+## 💡Update Log
   * [add|20240730] | 🟢 LLM Recursive Prompt
   * [add|20240730] | 🟢 Keep ur prompt ahead each request
   * [add|20240731] | 🟢 LLM Vision
@@ -54,19 +54,18 @@
       * ex: Chinese. It's just for your reference, which won't affect SD.
   * [add|20240808] | 🟠 Before and After script | exe-command
   * [add|20240808] | 🟠 release LLM VRAM everytimes
+  * [add|20250120] | 🟠 add chatBot for DeepSeek.R1 & openAI.DeepResearch model. Lets chat&train ur LLM first then use 2.3 keyword list get prompt
+![LLM-Text-Chat.png](images/LLM-Text-Chat.png)
 
-## Motivation💡
+## 💡Motivation
 * Call LLM       : auto prompt for batch generate images 
 * Call LLM-Vision: auto prompt for batch generate images
 * Image will get more details that u never though before.
 * prompt detail is important
+ 
 
-## Update List
-
-#### 20250120 
-* add serial chat-like for deep seek R1 model
-![LLM-Text-Chat.png](images/LLM-Text-Chat.png)
-## Usage
+ 
+## 💡Usage
 
 #### LLM-Text
 * batch image generate with LLM
