@@ -55,7 +55,8 @@
   * [add|20240808] | 🟠 Before and After script | exe-command
   * [add|20240808] | 🟠 release LLM VRAM everytimes
   * [add|20250120] | 🟠 add chatBot for DeepSeek.R1 & openAI.DeepResearch model. Lets chat&train ur LLM first then use 2.3 keyword list get prompt
-![LLM-Text-Chat.png](images/LLM-Text-Chat.png)
+
+  * ![LLM-Text-Chat.png](images/LLM-Text-Chat.png)
 
 ## 💡Motivation
 * Call LLM       : auto prompt for batch generate images 
