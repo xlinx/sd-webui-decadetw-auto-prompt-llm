@@ -126,6 +126,7 @@ def community_import_from_text(*args, **kwargs):
 
 def getReqJson(llm_apiurl, llm_api_model_name, system_prompt, ur_prompt, temperature, top_k, top_p, max_token,
                base64_image):
+    global LAST_LLM_ANSWER
     if 'google' in llm_apiurl:
         j = {
             # "system_instruction": {
@@ -479,6 +480,7 @@ class AutoLLM(scripts.Script):
 
     def call_llm_text(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                       llm_text_system_prompt, llm_text_ur_prompt,
+                      llm_text_ur_prompt_line_by_line,
                       llm_text_max_token, llm_text_tempture,
                       llm_apiurl, llm_apikey, llm_api_model_name,
                       llm_api_translate_system_prompt, llm_api_translate_enabled,
@@ -493,7 +495,12 @@ class AutoLLM(scripts.Script):
                       llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
                       CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
                       ):
+        global global_line_byline
+        global_line_byline += 1
 
+        if llm_text_ur_prompt_line_by_line:
+            ll_arr = llm_text_ur_prompt.split('\n')
+            llm_text_ur_prompt = ll_arr[global_line_byline % len(ll_arr)]
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
         if EnumCmdReturnType.LLM_USER_PROMPT.value in llm_before_action_cmd_feedback_type:
             llm_text_ur_prompt += llm_before_action_cmd_return_value
@@ -606,6 +613,71 @@ class AutoLLM(scripts.Script):
         with gr.Blocks():
             # gr.Markdown("Blocks")
             with gr.Accordion(open=True, label="Auto LLM v20250101 - DECADE.TW"):
+                with gr.Tab("Setup"):
+                    gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
+                                "* API-URI: ollama  => http://localhost:11434/v1 \n"
+                                "* API-ModelName: LMStudio can be empty here is fine; select it LMStudio App; ollama should set like: llama3.1 (cmd:ollama list)\n"
+                                "* OLLAMA OpenAI compatibility https://ollama.com/blog/openai-compatibility\n"
+                                )
+                    with gr.Row():
+                        llm_apiurl = gr.Textbox(
+                            label="1.[LLM-URL]  ",
+                            lines=1,
+                            value="http://localhost:1234/v1")
+                        llm_apiurl_radio = gr.Radio(Enum_Api_URL_ReturnType.values(),
+                                                    value=Enum_Api_URL_ReturnType.values()[0],
+                                                    label="1.1 Quick URL"
+                                                    )
+                    llm_apikey = gr.Textbox(label="2.[LLM-API-Key] lm-studio | ollama", lines=1, value="lm-studio")
+                    with gr.Row():
+                        llm_api_model_name = gr.Textbox(
+                            label="3.[LLM-Model-Name] its no need to set for lmstudio; others like:ollama gemini need. ",
+                            lines=1,
+                            value="llama3.1",
+                            placeholder="llama3.1, llama2, gemma2 gemini-pro gemini-1.5-flash(vision)")
+                        llm_api_model_name_radio = gr.Radio(Enum_Api_MODEL_ReturnType.values(),
+                                                            value=Enum_Api_URL_ReturnType.values()[0],
+                                                            label="3.1 Quick MODEL"
+                                                            )
+                    with gr.Row():
+                        with gr.Column(scale=2):
+                            llm_before_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(),
+                                                                           value='just-call',
+                                                                           label="4.1 Return value type",
+                                                                           info="Capture CMD return value for LLM-xxx?")
+                            # llm_before_action_cmd_feedback = gr.Checkbox(label="Capture CMD return value to LLM-user-prompt",value=False)
+                            # llm_before_action_cmd_feedback_vision = gr.Checkbox(label="Capture CMD return image path to LLM-vision",value=False)
+                            llm_before_action_cmd = gr.Textbox(
+                                label="4.1 Before LLM API call action",
+                                lines=3,
+                                value="",
+                                placeholder="""run getStoryLine.bat | sh myStoryBook.sh'""",
+                                info="call ur script(.bat, .sh) ")
+
+                        with gr.Column(scale=2):
+                            llm_post_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(), value='just-call',
+                                                                         label="4.2 Return value type",
+                                                                         info="Capture CMD return value for LLM-xxx?")
+                            # llm_post_action_cmd_feedback = gr.Checkbox(
+                            #     label="Capture CMD return value to LLM-user-prompt",
+                            #     info="You can call ur script(.bat, .sh) for LLM prompt or call customer cmd. ex: curl",
+                            #     value=False)
+                            # llm_post_action_cmd_feedback_vision = gr.Checkbox(
+                            #     label="Capture CMD return image path to LLM-vision",
+                            #     info="call ur script(.bat, .sh) for LLM-vision image input path",
+                            #     value=False, enable=False)
+                            llm_post_action_cmd = gr.Textbox(
+                                label="4.2 After LLM API call action ",
+                                lines=3,
+                                value="",
+                                placeholder="""curl http://localhost:11434/api/generate -d '{"keep_alive": 0}'""",
+                                info="call ur script(.bat, .sh) ")
+
+                    llm_api_translate_enabled = gr.Checkbox(
+                        label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference on ur favorite language. )",
+                        value=False)
+                    llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
+                                                                 value=self.llm_sys_translate_template)
                 with gr.Tab(label="LLM-text", default=True):
                     # with gr.Accordion(open=True, label="[Prompt]/[LLM-PythonLib]"):
                     gr.Markdown("* Generate forever mode \n"
@@ -625,6 +697,8 @@ class AutoLLM(scripts.Script):
                                                             value="A superstar on stage.",
 
                                                             placeholder="A superstar on stage.")
+                            llm_text_ur_prompt_line_by_line = gr.Checkbox(label="2.1 Enable Line by Line(txt input)",
+                                                                          value=False)
 
                         with gr.Column(scale=4):
                             llm_text_tempture = gr.Slider(-2, 2, value=0.7, step=0.01,
@@ -693,11 +767,12 @@ class AutoLLM(scripts.Script):
                                 "role": "system",
                                 "content": llm_text_system_prompt.value
                             }] + [
-                                    {
-                                        "role": "user" if index % 2 == 0 else "assistant",
-                                        "content": list(itertools.chain(*history))[index]
-                                    } for index in range(len(list(itertools.chain(*history)))) # ... finally flatten the history 2d array in lambda ... by xlinx
-                            ] +
+                                            {
+                                                "role": "user" if index % 2 == 0 else "assistant",
+                                                "content": list(itertools.chain(*history))[index]
+                                            } for index in range(len(list(itertools.chain(*history))))
+                                            # ... finally flatten the history 2d array in lambda ... by xlinx
+                                        ] +
                                         [{"role": "user", "content": message}],
                             # Prepare the payload for the API request
                             payload := {
@@ -714,8 +789,8 @@ class AutoLLM(scripts.Script):
                             },
                             # Send the request to LM Studio API
                             response := requests.post(
-                                # llm_apiurl.value,
-                                'http://localhost:1234/v1/chat/completions/',
+                                llm_apiurl.value,
+                                # 'http://localhost:1234/v1/chat/completions/',
                                 headers=headers_x,
                                 json=payload
                             ),
@@ -836,71 +911,6 @@ class AutoLLM(scripts.Script):
                         label="1. Append follow each line LLM-Ans. [ uncheck:Send last one LLM-Answer. ] [ check:Append follow line each to LLM ]",
                         value=False)
 
-                with gr.Tab("Setup"):
-                    gr.Markdown("* API-URI: LMStudio=>http://localhost:1234/v1 \n"
-                                "* API-URI: ollama  => http://localhost:11434/v1 \n"
-                                "* API-ModelName: LMStudio can be empty here is fine; select it LMStudio App; ollama should set like: llama3.1 (cmd:ollama list)\n"
-                                "* OLLAMA OpenAI compatibility https://ollama.com/blog/openai-compatibility\n"
-                                )
-                    with gr.Row():
-                        llm_apiurl = gr.Textbox(
-                            label="1.[LLM-URL]  ",
-                            lines=1,
-                            value="http://localhost:1234/v1")
-                        llm_apiurl_radio = gr.Radio(Enum_Api_URL_ReturnType.values(),
-                                                    value=Enum_Api_URL_ReturnType.values()[0],
-                                                    label="1.1 Quick URL"
-                                                    )
-                    llm_apikey = gr.Textbox(label="2.[LLM-API-Key] lm-studio | ollama", lines=1, value="lm-studio")
-                    with gr.Row():
-                        llm_api_model_name = gr.Textbox(
-                            label="3.[LLM-Model-Name] its no need to set for lmstudio; others like:ollama gemini need. ",
-                            lines=1,
-                            value="llama3.1",
-                            placeholder="llama3.1, llama2, gemma2 gemini-pro gemini-1.5-flash(vision)")
-                        llm_api_model_name_radio = gr.Radio(Enum_Api_MODEL_ReturnType.values(),
-                                                            value=Enum_Api_URL_ReturnType.values()[0],
-                                                            label="3.1 Quick MODEL"
-                                                            )
-                    with gr.Row():
-                        with gr.Column(scale=2):
-                            llm_before_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(),
-                                                                           value='just-call',
-                                                                           label="4.1 Return value type",
-                                                                           info="Capture CMD return value for LLM-xxx?")
-                            # llm_before_action_cmd_feedback = gr.Checkbox(label="Capture CMD return value to LLM-user-prompt",value=False)
-                            # llm_before_action_cmd_feedback_vision = gr.Checkbox(label="Capture CMD return image path to LLM-vision",value=False)
-                            llm_before_action_cmd = gr.Textbox(
-                                label="4.1 Before LLM API call action",
-                                lines=3,
-                                value="",
-                                placeholder="""run getStoryLine.bat | sh myStoryBook.sh'""",
-                                info="call ur script(.bat, .sh) ")
-
-                        with gr.Column(scale=2):
-                            llm_post_action_cmd_feedback_type = gr.Radio(EnumCmdReturnType.values(), value='just-call',
-                                                                         label="4.2 Return value type",
-                                                                         info="Capture CMD return value for LLM-xxx?")
-                            # llm_post_action_cmd_feedback = gr.Checkbox(
-                            #     label="Capture CMD return value to LLM-user-prompt",
-                            #     info="You can call ur script(.bat, .sh) for LLM prompt or call customer cmd. ex: curl",
-                            #     value=False)
-                            # llm_post_action_cmd_feedback_vision = gr.Checkbox(
-                            #     label="Capture CMD return image path to LLM-vision",
-                            #     info="call ur script(.bat, .sh) for LLM-vision image input path",
-                            #     value=False, enable=False)
-                            llm_post_action_cmd = gr.Textbox(
-                                label="4.2 After LLM API call action ",
-                                lines=3,
-                                value="",
-                                placeholder="""curl http://localhost:11434/api/generate -d '{"keep_alive": 0}'""",
-                                info="call ur script(.bat, .sh) ")
-
-                    llm_api_translate_enabled = gr.Checkbox(
-                        label="Enable translate LLM-answer to Your language.(won`t effect with SD, just for reference on ur favorite language. )",
-                        value=False)
-                    llm_api_translate_system_prompt = gr.Textbox(label=" 5.[LLM-Translate-System-Prompt]", lines=5,
-                                                                 value=self.llm_sys_translate_template)
                 with gr.Tab("Civitai Meta Grabber"):
                     with gr.Tab("prompt from Model"):
                         gr.Markdown("- Quick walk through all image style prompt of model that u never download\n"
@@ -1035,6 +1045,7 @@ class AutoLLM(scripts.Script):
 
         all_var_val = [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                        llm_text_system_prompt, llm_text_ur_prompt,
+                       llm_text_ur_prompt_line_by_line,
                        llm_text_max_token, llm_text_tempture,
                        llm_apiurl, llm_apikey, llm_api_model_name,
                        llm_api_translate_system_prompt, llm_api_translate_enabled,
@@ -1050,6 +1061,7 @@ class AutoLLM(scripts.Script):
                        ]
         all_var_val_wo_image = [llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
                                 llm_text_system_prompt, llm_text_ur_prompt,
+                                llm_text_ur_prompt_line_by_line,
                                 llm_text_max_token, llm_text_tempture,
                                 llm_apiurl, llm_apikey, llm_api_model_name,
                                 llm_api_translate_system_prompt, llm_api_translate_enabled,
@@ -1162,8 +1174,10 @@ class AutoLLM(scripts.Script):
 
 
 args_dict = None
+global_line_byline = 0
 all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use',
                'llm_text_system_prompt', 'llm_text_ur_prompt',
+               'llm_text_ur_prompt_line_by_line',
                'llm_text_max_token', 'llm_text_tempture',
                'llm_apiurl', 'llm_apikey', 'llm_api_model_name',
                'llm_api_translate_system_prompt', 'llm_api_translate_enabled',
@@ -1179,6 +1193,7 @@ all_var_key = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use'
                ]
 all_var_key_wo_image = ['llm_is_enabled', 'llm_recursive_use', 'llm_keep_your_prompt_use',
                         'llm_text_system_prompt', 'llm_text_ur_prompt',
+                        'llm_text_ur_prompt_line_by_line',
                         'llm_text_max_token', 'llm_text_tempture',
                         'llm_apiurl', 'llm_apikey', 'llm_api_model_name',
                         'llm_api_translate_system_prompt', 'llm_api_translate_enabled',

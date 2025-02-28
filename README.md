@@ -52,9 +52,9 @@
   * [add|20240803] | 🟢 translateFunction 
     * When LLM answered, use LLM translate result to your favorite language. 
       * ex: Chinese. It's just for your reference, which won't affect SD.
-  * [add|20240808] | 🟠 Before and After script | exe-command
+  * [add|20240808] | 🟢 Before and After script | exe-command
   * [add|20240808] | 🟠 release LLM VRAM everytimes
-  * [add|20250120] | 🟠 add chatBot for DeepSeek.R1 & openAI.DeepResearch model. Lets chat&train ur LLM first then use 2.3 keyword list get prompt
+  * [add|20250120] | 🟢 add chatBot for DeepSeek.R1 & openAI.DeepResearch model. Lets chat&train ur LLM first then use 2.3 keyword list get prompt
 
   * ![LLM-Text-Chat.png](images/LLM-Text-Chat.png)
 
