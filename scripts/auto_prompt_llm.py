@@ -394,20 +394,22 @@ class AutoLLM(scripts.Script):
         return result_mix
 
     def call_llm_eye_open(self, llm_is_enabled, llm_recursive_use, llm_keep_your_prompt_use,
-                          llm_text_system_prompt, llm_text_ur_prompt,
-                          llm_text_max_token, llm_text_tempture,
-                          llm_apiurl, llm_apikey, llm_api_model_name,
-                          llm_api_translate_system_prompt, llm_api_translate_enabled,
-                          llm_is_open_eye,
-                          llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_ur_prompt_image_eye,
-                          llm_text_tempture_eye,
-                          llm_text_max_token_eye,
-                          llm_before_action_cmd_feedback_type, llm_before_action_cmd,
-                          llm_post_action_cmd_feedback_type,
-                          llm_post_action_cmd,
-                          llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
-                          llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
-                          CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt):
+                      llm_text_system_prompt, llm_text_ur_prompt,
+                      llm_text_ur_prompt_line_by_line,
+                      llm_text_max_token, llm_text_tempture,
+                      llm_apiurl, llm_apikey, llm_api_model_name,
+                      llm_api_translate_system_prompt, llm_api_translate_enabled,
+                      llm_is_open_eye,
+                      llm_text_system_prompt_eye, llm_text_ur_prompt_eye, llm_text_ur_prompt_image_eye,
+                      llm_text_tempture_eye,
+                      llm_text_max_token_eye,
+                      llm_before_action_cmd_feedback_type, llm_before_action_cmd,
+                      llm_post_action_cmd_feedback_type,
+                      llm_post_action_cmd,
+                      llm_top_k_text, llm_top_p_text, llm_top_k_vision, llm_top_p_vision,
+                      llm_loop_enabled, llm_loop_ur_prompt, llm_loop_count_slider, llm_loop_each_append,
+                      CivitaiMetaGrabber_to_llm_text_ur_prompt, CivitaiMetaGrabber_to_prompt
+                      ):
         llm_before_action_cmd_return_value = self.do_subprocess_action(llm_before_action_cmd)
 
         if llm_recursive_use and (self.llm_history_array.__len__() > 1):
